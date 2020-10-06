@@ -1,0 +1,1 @@
+﻿GRANT SELECT ON `MxRecord` TO '{env}-tls-entity' IDENTIFIED BY '{password}';
