@@ -14,9 +14,9 @@
     <PackageReference Include="MailCheck.Common.Logging" Version="4.0.0" />
     <PackageReference Include="MailCheck.Common.Messaging.Abstractions" Version="4.0.0" />
     <PackageReference Include="MailCheck.Common.Translations" Version="4.0.0" />
-    <PackageReference Include="nunit" Version="3.10.1" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
+    <PackageReference Include="nunit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="MailCheck.Common.Contracts" Version="4.0.0" />
     <PackageReference Include="MailCheck.Common.Data" Version="4.0.0" />
     <PackageReference Include="MailCheck.Common.Messaging" Version="4.0.0" />

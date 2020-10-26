@@ -5,6 +5,7 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using MailCheck.Mx.TlsTester.Config;
 using MailCheck.Mx.TlsTester.Domain;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace MailCheck.Mx.TlsTester
@@ -18,35 +19,45 @@ namespace MailCheck.Mx.TlsTester
     {
         private readonly IAmazonSQS _sqs;
         private readonly IMxTesterConfig _config;
+        private readonly ILogger<MxQueueProcessor> _log;
 
-        public MxQueueProcessor(IAmazonSQS sqs, IMxTesterConfig config)
+        public MxQueueProcessor(IAmazonSQS sqs, IMxTesterConfig config, ILogger<MxQueueProcessor> log)
         {
             _sqs = sqs;
             _config = config;
+            _log = log;
         }
 
         public async Task<List<TlsTestPending>> GetMxHosts()
         {
-            Console.WriteLine("Starting processing SQS messages...");
-
             ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(_config.SqsQueueUrl)
             {
                 WaitTimeSeconds = 20, //Long polling
-                MaxNumberOfMessages = 10
+                MaxNumberOfMessages = 10 // 10 is the max
             };
+
+            _log.LogDebug("Starting long poll for SQS messages...");
+
+            ReceiveMessageResponse receiveMessageResponse = await _sqs.ReceiveMessageAsync(receiveMessageRequest);
+
+            _log.LogDebug($"Found {receiveMessageResponse.Messages.Count} SQS messages");
 
             List<TlsTestPending> list = new List<TlsTestPending>();
 
-            ReceiveMessageResponse receiveMessageResponse = await _sqs.ReceiveMessageAsync(receiveMessageRequest);
-            
-            Console.WriteLine($"Found {receiveMessageResponse.Messages.Count} messages");
-
             foreach (Message message in receiveMessageResponse.Messages)
             {
-                TlsTestPending pendingTest = JsonConvert.DeserializeObject<TlsTestPending>(message.Body);
-                pendingTest.MessageId = message.MessageId;
-                pendingTest.ReceiptHandle = message.ReceiptHandle;
-                list.Add(pendingTest);
+                try
+                {
+                    _log.LogDebug($"Deserializing SQS message {message.MessageId}");
+                    TlsTestPending pendingTest = JsonConvert.DeserializeObject<TlsTestPending>(message.Body);
+                    pendingTest.MessageId = message.MessageId;
+                    pendingTest.ReceiptHandle = message.ReceiptHandle;
+                    list.Add(pendingTest);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogError(ex, $"Deserializing SQS message failed for message {message.MessageId}");
+                }
             }
            
             return list;
@@ -54,6 +65,8 @@ namespace MailCheck.Mx.TlsTester
 
         public async Task DeleteMessage(string messageId, string receiptHandle)
         {
+            _log.LogDebug($"Deleting SQS message {messageId}");
+
             DeleteMessageBatchRequest deleteMessageRequest = new DeleteMessageBatchRequest
             {
                 QueueUrl = _config.SqsQueueUrl,

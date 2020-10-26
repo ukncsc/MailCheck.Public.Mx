@@ -14,7 +14,6 @@ namespace MailCheck.Mx.TlsTester.Test.Factory
             System.Environment.SetEnvironmentVariable("RefreshIntervalSeconds", "1");
             System.Environment.SetEnvironmentVariable("FailureRefreshIntervalSeconds", "1");
             System.Environment.SetEnvironmentVariable("TlsTestTimeoutSeconds", "1");
-            System.Environment.SetEnvironmentVariable("SchedulerRunIntervalSeconds", "1");
             System.Environment.SetEnvironmentVariable("SmtpHostName", "localhost");
             System.Environment.SetEnvironmentVariable("CacheHostName", "localhost");
             System.Environment.SetEnvironmentVariable("SnsTopicArn", "localhost");

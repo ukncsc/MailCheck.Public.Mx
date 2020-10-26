@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -19,12 +21,17 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
     public class MxSecurityTesterProcessor : IMxSecurityTesterProcessor
     {
+        private const string TlsHostLogPropertyName = "TlsHost";
+
         private readonly IMxQueueProcessor _mxQueueProcessor;
         private readonly IMessagePublisher _publisher;
         private readonly ITlsSecurityTesterAdapator  _mxHostTester;
         private readonly IMxSecurityProcessingFilter _processingFilter;
         private readonly IMxTesterConfig _config;
         private readonly ILogger<MxSecurityTesterProcessor> _log;
+        private readonly TimeSpan PublishBatchFlushInterval;
+        private readonly TimeSpan PrintStatsInterval;
+        private readonly Func<ITargetBlock<object>, CancellationToken, Task> RunPipeline;
 
         public MxSecurityTesterProcessor(
             IMxQueueProcessor mxQueueProcessor,
@@ -32,7 +39,25 @@ namespace MailCheck.Mx.TlsTester.MxTester
             ITlsSecurityTesterAdapator mxHostTester,
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
-            ILogger<MxSecurityTesterProcessor> log)
+            ILogger<MxSecurityTesterProcessor> log
+        ) : this(
+            mxQueueProcessor,
+            publisher,
+            mxHostTester,
+            config,
+            processingFilter,
+            log,
+            null
+        ) { }
+
+        internal MxSecurityTesterProcessor(
+            IMxQueueProcessor mxQueueProcessor,
+            IMessagePublisher publisher,
+            ITlsSecurityTesterAdapator mxHostTester,
+            IMxTesterConfig config,
+            IMxSecurityProcessingFilter processingFilter,
+            ILogger<MxSecurityTesterProcessor> log,
+            Func<ITargetBlock<object>, CancellationToken, Task> runPipeline)
         {
             _mxQueueProcessor = mxQueueProcessor;
             _publisher = publisher;
@@ -40,77 +65,133 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _config = config;
             _log = log;
             _processingFilter = processingFilter;
+            PublishBatchFlushInterval = TimeSpan.FromSeconds(_config.PublishBatchFlushIntervalSeconds);
+            PrintStatsInterval = TimeSpan.FromSeconds(_config.PrintStatsIntervalSeconds);
+            RunPipeline = runPipeline ?? DefaultRunPipeline;
         }
 
         public async Task Process(CancellationToken cancellationToken)
         {
             DataflowLinkOptions linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
-            ExecutionDataflowBlockOptions pipelineStartBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 10 };
-            ExecutionDataflowBlockOptions preBatchBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 500 };
-            ExecutionDataflowBlockOptions parallelPreBatchBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 500, MaxDegreeOfParallelism = 20, EnsureOrdered = false };
-            ExecutionDataflowBlockOptions postBatchBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 50 };
-            GroupingDataflowBlockOptions postBatchGroupingBlockOptions = new GroupingDataflowBlockOptions { BoundedCapacity = 50 };
+            ExecutionDataflowBlockOptions singleItemBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1, EnsureOrdered = false };
+            ExecutionDataflowBlockOptions bufferBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 100, EnsureOrdered = false };
+            ExecutionDataflowBlockOptions unboundedBlockOptions = new ExecutionDataflowBlockOptions { EnsureOrdered = false };
+            GroupingDataflowBlockOptions batchingBlockOptions = new GroupingDataflowBlockOptions { EnsureOrdered = false };
 
-            BufferBlock<object> pollQueue = new BufferBlock<object>(pipelineStartBlockOptions);
+            TransformManyBlock<object, TlsTestPending> queuePoller =
+                new TransformManyBlock<object, TlsTestPending>(_ => GetMxHostToProcess(_), singleItemBlockOptions);
 
-            TransformManyBlock<object, TlsTestPending> mxHostToProcessQueue =
-                new TransformManyBlock<object, TlsTestPending>(async _ => await GetMxHostToProcess(), preBatchBlockOptions);
+            BufferBlock<TlsTestPending> buffer = new BufferBlock<TlsTestPending>(bufferBlockOptions);
 
-            TransformManyBlock<TlsTestPending, TlsTestPending> alreadyProcessingFilter =
-                new TransformManyBlock<TlsTestPending, TlsTestPending>(_ => ApplyFilter(_), preBatchBlockOptions);
+            TransformManyBlock<TlsTestPending, TlsTestPending> duplicateFilter =
+                new TransformManyBlock<TlsTestPending, TlsTestPending>(_ => FilterHosts(_), singleItemBlockOptions);
 
-            TransformBlock<TlsTestPending, MxHostTestDetails> mxTestProcessorQueue =
-                new TransformBlock<TlsTestPending, MxHostTestDetails>(async _ => await TestMxHost(_), parallelPreBatchBlockOptions);
+            List<TransformBlock<TlsTestPending, MxHostTestDetails>> mxTestProcessors = Enumerable
+                .Range(1, _config.TlsTesterThreadCount)
+                .Select(index => new TransformBlock<TlsTestPending, MxHostTestDetails>(CreateTlsTester(Guid.NewGuid()), singleItemBlockOptions))
+                .ToList();
 
-            BatchBlock<MxHostTestDetails> toPublishQueue =
-                new BatchBlock<MxHostTestDetails>(_config.PublishBatchSize, postBatchGroupingBlockOptions);
+            BatchBlock<MxHostTestDetails> resultBatcher =
+                new BatchBlock<MxHostTestDetails>(_config.PublishBatchSize, batchingBlockOptions);
 
             Timer timer = new Timer(_ =>
             {
-                toPublishQueue.TriggerBatch();
+                resultBatcher.TriggerBatch();
                 _log.LogDebug("Batch triggered.");
             });
+            
+            TransformBlock<MxHostTestDetails, MxHostTestDetails> batchFlusher =
+                new TransformBlock<MxHostTestDetails, MxHostTestDetails>(ResetTimer(timer), unboundedBlockOptions);
 
-            TransformBlock<MxHostTestDetails, MxHostTestDetails> batchTimeoutQueue =
-                new TransformBlock<MxHostTestDetails, MxHostTestDetails>(_ => ResetTimer(_, timer), preBatchBlockOptions);
+            TransformBlock<MxHostTestDetails[], MxHostTestDetails[]> resultPublisher =
+                new TransformBlock<MxHostTestDetails[], MxHostTestDetails[]>(_ => PublishResults(_), unboundedBlockOptions);
 
-            TransformBlock<MxHostTestDetails[], MxHostTestDetails[]> mxResultsPublisher =
-                new TransformBlock<MxHostTestDetails[], MxHostTestDetails[]>(async _ => await PublishResults(_), postBatchBlockOptions);
+            ActionBlock<MxHostTestDetails[]> deleteFromQueue =
+                new ActionBlock<MxHostTestDetails[]>(_ => RemoveFromQueue(_), unboundedBlockOptions);
 
-            ActionBlock<MxHostTestDetails[]> filterItemRemover =
-                new ActionBlock<MxHostTestDetails[]>(async _ => await RemoveFromQueue(_), postBatchBlockOptions);
+            queuePoller.LinkTo(buffer, linkOptions);
+            buffer.LinkTo(duplicateFilter, linkOptions);
 
-            pollQueue.LinkTo(mxHostToProcessQueue, linkOptions, hosts => hosts != null);
-            mxHostToProcessQueue.LinkTo(alreadyProcessingFilter, linkOptions, result => result != null);
-            alreadyProcessingFilter.LinkTo(mxTestProcessorQueue, linkOptions, result => result != null);
-            mxTestProcessorQueue.LinkTo(batchTimeoutQueue, linkOptions);
-            batchTimeoutQueue.LinkTo(toPublishQueue, linkOptions);
-            toPublishQueue.LinkTo(mxResultsPublisher, linkOptions);
-            mxResultsPublisher.LinkTo(filterItemRemover, linkOptions);
+            mxTestProcessors.ForEach(processor => {
+                duplicateFilter.LinkTo(processor, linkOptions);
+                processor.LinkTo(batchFlusher); // No completion propogate here
+            });
 
-            await Task.WhenAll(StartPipeline(pollQueue, cancellationToken),
-                PrintStats(mxTestProcessorQueue, cancellationToken),
-                pollQueue.Completion,
-                mxHostToProcessQueue.Completion,
-                mxTestProcessorQueue.Completion,
-                batchTimeoutQueue.Completion,
-                toPublishQueue.Completion,
-                mxResultsPublisher.Completion,
-                filterItemRemover.Completion);
+            batchFlusher.LinkTo(resultBatcher, linkOptions);
+            resultBatcher.LinkTo(resultPublisher, linkOptions);
+            resultPublisher.LinkTo(deleteFromQueue, linkOptions);
+
+            var blocks = new Dictionary<string, Func<int>> {
+                ["Queued"] = () => queuePoller.OutputCount + buffer.Count,
+                ["Processing"] = () => _processingFilter.HostCount,
+            };
+
+            var processorTasks = mxTestProcessors.Select(processor => processor.Completion).ToArray();
+
+            // Start the stats print loop
+            var statsTask = PrintStats(blocks, cancellationToken);
+
+            await RunPipeline(queuePoller, cancellationToken);
+
+            _log.LogInformation("Shutting down TLS Tester");
+
+            queuePoller.Complete();
+
+            _log.LogInformation("Waiting for test processors to complete...");
+
+            await Task.WhenAll(processorTasks);
+
+            _log.LogInformation("Test processors complete. Flushing results...");
+
+            batchFlusher.Complete();
+
+            _log.LogInformation("Waiting for results flush and final shutdown...");
+
+            await Task.WhenAll(
+                statsTask,
+                deleteFromQueue.Completion
+            );
+
+            _log.LogInformation("TLS tester shut down. Exiting.");
         }
 
         private async Task RemoveFromQueue(MxHostTestDetails[] messages)
         {
             foreach (MxHostTestDetails tlsTestResult in messages)
             {
-                _processingFilter.RemoveFilter(tlsTestResult.TestResults.Id);
+                var test = tlsTestResult.Test;
+                var hostname = test.Id;
+                var messageId = test.MessageId;
+                var receiptHandle = test.ReceiptHandle;
 
-                await DeleteMessageFromQueue(tlsTestResult.TestResults.Id, tlsTestResult.MessageId,
-                    tlsTestResult.ReceiptHandle);
+                using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = hostname }))
+                {
+                    try
+                    {
+                        if (tlsTestResult.PublishedResultsSuccessfully)
+                        {
+                            _log.LogInformation($"Deleting message from sqs for host: {hostname} - Message Id: {messageId}");
+                            await _mxQueueProcessor.DeleteMessage(messageId, receiptHandle);
+                            _log.LogInformation($"Deleted message from sqs for host: {hostname} - Message Id: {messageId}");
+                        }
+                        else
+                        {
+                            _log.LogInformation($"Returning message to queue - failed to retrieve or publish results for host {hostname}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogError(ex, $"Error occurred deleting message {test.MessageId} from queue for hostname {hostname}");
+                    }
+                    finally
+                    {
+                        _processingFilter.ReleaseReservation(hostname);
+                    }
+                }
             }
         }
 
-        private async Task<TlsTestPending[]> GetMxHostToProcess()
+        private async Task<IEnumerable<TlsTestPending>> GetMxHostToProcess(object _)
         {
             List<TlsTestPending> hosts = new List<TlsTestPending>();
 
@@ -118,128 +199,132 @@ namespace MailCheck.Mx.TlsTester.MxTester
             {
                 _log.LogDebug("Getting mx hosts to process.");
 
-                hosts.AddRange( await _mxQueueProcessor.GetMxHosts());
+                hosts.AddRange(await _mxQueueProcessor.GetMxHosts());
 
-                _log.LogDebug(hosts.Any()
-                    ? $"Found {hosts.Count} mx hosts to test: {Environment.NewLine}{string.Join(Environment.NewLine, hosts.Select(_ => _.Id))}"
+                _log.LogDebug(hosts.Count > 0
+                    ? $"Found {hosts.Count} mx hosts to test: {Environment.NewLine}{string.Join(Environment.NewLine, hosts.Select(pendingTest => pendingTest.Id))}"
                     : "Didn't find any hosts to test.");
-
-                return hosts.ToArray();
             }
             catch (Exception e)
             {
-                _log.LogError($"The following error occured fetching mx hosts to test:: {e.Message}{Environment.NewLine}{e.StackTrace}");
+                _log.LogError(e, $"Error occured fetching mx hosts to test");
             }
 
             return hosts.ToArray();
         }
 
-        private TlsTestPending[] ApplyFilter(TlsTestPending testPending)
+        private IEnumerable<TlsTestPending> FilterHosts(TlsTestPending host)
         {
-            try
+            using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = host.Id }))
             {
-                _log.LogDebug("Applying filter.");
-
-                TlsTestPending filteredResult = _processingFilter.ApplyFilter(testPending);
-
-                _log.LogDebug($"Already being processed: {filteredResult == null}");
-
-                if (filteredResult != null) return new[] {filteredResult};
+                if (_processingFilter.Reserve(host.Id))
+                {
+                    yield return host;
+                }
             }
-            catch (Exception e)
-            {
-                _log.LogError(
-                    $"The following error occured applying filter (host: {testPending.Id}): {e.Message}{Environment.NewLine}{e.StackTrace}");
-            }
-
-            return new TlsTestPending[0];
         }
 
-        private async Task<MxHostTestDetails> TestMxHost(TlsTestPending tlsTest)
+        private Func<TlsTestPending, Task<MxHostTestDetails>> CreateTlsTester(Guid testerId)
         {
-            try
+            return async tlsTest =>
             {
-                _log.LogDebug($"Testing smtp for host: {tlsTest.Id}");
+                using (_log.BeginScope(new Dictionary<string, object> { ["TlsTesterId"] = testerId, [TlsHostLogPropertyName] = tlsTest.Id }))
+                {
+                    try
+                    {
+                        var stopwatch = Stopwatch.StartNew();
+                        _log.LogInformation($"Starting TLS test run");
+                        TlsTestResults tlsTestResults = await _mxHostTester.Test(tlsTest);
+                        _log.LogInformation($"Completed TLS test run, time taken : {stopwatch.ElapsedMilliseconds}ms");
+                        return new MxHostTestDetails(tlsTestResults, tlsTest);
+                    }
+                    catch (Exception e)
+                    {
+                        _log.LogError(e, $"Error occurred during TLS test run");
+                    }
 
-                TlsTestResults tlsTestResults = await _mxHostTester.Test(tlsTest);
-
-                _log.LogDebug($"Testing completed for host: {tlsTest.Id}");
-
-                return new MxHostTestDetails(tlsTestResults, tlsTest.MessageId, tlsTest.ReceiptHandle);
-            }
-            catch (Exception e)
-            {
-                _log.LogError(
-                    $"The following error occured testing host: {tlsTest.Id}): {e.Message}{Environment.NewLine}{e.StackTrace}");
-                throw;
-            }
+                    return new MxHostTestDetails(null, tlsTest);
+                }
+            };
         }
 
         private async Task<MxHostTestDetails[]> PublishResults(MxHostTestDetails[] tlsTestResults)
         {
             foreach (MxHostTestDetails tlsTestResult in tlsTestResults)
             {
-                _log.LogDebug($"Publishing smtp test results for host: {tlsTestResult.TestResults.Id}");
-                await _publisher.Publish(tlsTestResult.TestResults, _config.SnsTopicArn);
-                _log.LogDebug($"Published smtp test results for host: {tlsTestResult.TestResults.Id}");
-            }
+                var hostname = tlsTestResult.Test.Id;
 
-            return tlsTestResults;
-        }
-
-        private MxHostTestDetails ResetTimer(MxHostTestDetails tlsTestResults, Timer timer)
-        {
-            try
-            {
-                _log.LogDebug("Batch timeout timer reset");
-                timer.Change(_config.PublishBatchFlushIntervalSeconds, Timeout.Infinite);
-            }
-            catch (Exception e)
-            {
-                _log.LogError($"The following error occured resetting batch timeout timer: {e.Message}{Environment.NewLine}{e.StackTrace}");
-            }
-
-            return tlsTestResults;
-        }
-
-        private async Task PrintStats(TransformBlock<TlsTestPending, MxHostTestDetails> processorBlock, CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                _log.LogDebug($"Mx tester is processing {_processingFilter.HostCount} items and has {processorBlock.InputCount} waiting to be processed.");
-                
-                Task delay = Task.Delay(TimeSpan.FromSeconds(60));
-                await Task.WhenAny(delay, cancellationToken.WhenCanceled());
-            }
-        }
-
-        private async Task DeleteMessageFromQueue(string host, string messageId, string receiptHandle)
-        {
-            _log.LogDebug(
-                $"Deleting message from sqs for host: {host} - Message Id: {messageId}");
-            await _mxQueueProcessor.DeleteMessage(messageId, receiptHandle);
-            _log.LogDebug(
-                $"Deleted message from sqs for host: {host} - Message Id: {messageId}");
-        }
-
-        private async Task StartPipeline(ITargetBlock<object> inputQueue,
-            CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                while (!await inputQueue.SendAsync(new object()))
+                using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = hostname }))
                 {
-                    _log.LogWarning("Waiting to schedule poll...");
-                    await Task.Delay(500);
+                    if (tlsTestResult.TestResults == null)
+                    {
+                        _log.LogInformation($"Skipping publish - no result for smtp test for host: {hostname}");
+                        continue;
+                    }
+
+                    try
+                    {
+                        _log.LogInformation($"Publishing smtp test results for host: {hostname}");
+                        await _publisher.Publish(tlsTestResult.TestResults, _config.SnsTopicArn);
+                        tlsTestResult.PublishedResultsSuccessfully = true;
+                        _log.LogInformation($"Published smtp test results for host: {hostname}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogError(ex, $"Error occurred publishing results for host: {hostname})");
+                    }
+                }
+            }
+
+            return tlsTestResults;
+        }
+
+        private Func<MxHostTestDetails, MxHostTestDetails> ResetTimer(Timer timer)
+        {
+            return (tlsTestResults) =>
+            {
+                try
+                {
+                    timer.Change(PublishBatchFlushInterval, Timeout.InfiniteTimeSpan);
+                }
+                catch (Exception e)
+                {
+                    _log.LogError(e, $"The following error occured resetting batch timeout timer");
                 }
 
-                _log.LogDebug("Poll scheduled.");
+                return tlsTestResults;
+            };
+        }
 
-                Task delay = Task.Delay(TimeSpan.FromSeconds(_config.SchedulerRunIntervalSeconds));
-                await Task.WhenAny(delay, cancellationToken.WhenCanceled());
+        private async Task PrintStats(Dictionary<string, Func<int>> blocks, CancellationToken cancellationToken)
+        {
+            if (PrintStatsInterval == TimeSpan.Zero) return;
 
+            Task cancelled = cancellationToken.WhenCanceled();
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                _log.LogInformation($"TLS Tester stats: {string.Join(", ", blocks.Select(x => $"{x.Key}: {x.Value()}"))}");
+
+                Task delay = Task.Delay(PrintStatsInterval);
+                await Task.WhenAny(delay, cancelled);
             }
-            inputQueue.Complete();
+        }
+
+        private async Task DefaultRunPipeline(ITargetBlock<object> inputQueue, CancellationToken cancellationToken)
+        {
+            Task cancelled = cancellationToken.WhenCanceled();
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                // This SendAsync task will not complete until the queue poller is ready to 
+                // accept a new element which will be after a previous poll has completed (20s long-poll)
+                // and the buffers from the previous poll have emptied i.e. the dequeued items 
+                // have been accepted by the next block.
+                Task queuePoll = inputQueue.SendAsync(null);
+                
+                await Task.WhenAny(queuePoll, cancelled);
+            }
         }
     }
 }

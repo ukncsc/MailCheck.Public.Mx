@@ -8,8 +8,8 @@ namespace MailCheck.Mx.TlsTester.MxTester
 {
     public interface IMxSecurityProcessingFilter
     {
-        TlsTestPending ApplyFilter(TlsTestPending testPending);
-        void RemoveFilter(string host);
+        bool Reserve(string host);
+        void ReleaseReservation(string host);
         int HostCount { get; }
     }
 
@@ -23,36 +23,27 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _log = log;
         }
 
-        public TlsTestPending ApplyFilter(TlsTestPending tlsTestPending)
+        public bool Reserve(string host)
         {
-            bool filter = Filter(tlsTestPending.Id);
-
-            if (filter)
+            _log.LogDebug($"Attempting to add reservation for host: {host}");
+            var result = _filterItems.TryAdd(host, null);
+            if (result)
             {
-                _log.LogDebug($"Filtered {tlsTestPending.Id}");
+                _log.LogDebug($"Reservation added for host: {host}");
             }
             else
             {
-                _filterItems.AddOrUpdate(tlsTestPending.Id, tlsTestPending.Id, (s, o) => tlsTestPending.Id);
-                _log.LogDebug($"Added host {tlsTestPending.Id} to filter.");
+                _log.LogDebug($"Reservation already held by another processor for host: {host}");
             }
-
-            return filter
-                ? null
-                : tlsTestPending;
+            return result;
         }
 
-        public void RemoveFilter(string host)
+        public void ReleaseReservation(string host)
         {
+            _log.LogDebug($"Releasing reservation for host: {host}");
             _filterItems.TryRemove(host, out string value);
-            _log.LogDebug($"Removed host: {host} from filter");
         }
 
-        private bool Filter(string host)
-        {
-            return _filterItems.TryGetValue(host, out _);
-        }
-
-        public int HostCount => _filterItems.Distinct().Count();
+        public int HostCount => _filterItems.Count;
     }
 }
