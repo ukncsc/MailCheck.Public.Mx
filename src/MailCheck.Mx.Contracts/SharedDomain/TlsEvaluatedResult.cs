@@ -16,7 +16,7 @@ namespace MailCheck.Mx.Contracts.SharedDomain
 
         protected bool Equals(TlsEvaluatedResult other)
         {
-            return string.Equals(Description, other.Description) && Result == other.Result;
+            return string.Equals(Id, other.Id);
         }
 
         public override bool Equals(object obj)
@@ -24,7 +24,7 @@ namespace MailCheck.Mx.Contracts.SharedDomain
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((TlsEvaluatedResult) obj);
+            return Equals((TlsEvaluatedResult)obj);
         }
 
         public override int GetHashCode()

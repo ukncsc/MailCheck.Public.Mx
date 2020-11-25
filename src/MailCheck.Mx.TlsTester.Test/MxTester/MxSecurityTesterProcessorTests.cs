@@ -25,6 +25,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
         private ITlsSecurityTesterAdapator _mxHostTester;
         private IMxTesterConfig _mxSecurityTesterConfig;
         private IMxSecurityProcessingFilter _processingFilter;
+        private IRecentlyProcessedLedger _recentlyProcessedLedger;
         private ILogger<MxSecurityTesterProcessor> _log;
 
         private ITargetBlock<object> _pipelineStartBlock;
@@ -39,6 +40,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             _mxHostTester = A.Fake<ITlsSecurityTesterAdapator>();
             _mxSecurityTesterConfig = A.Fake<IMxTesterConfig>();
             _processingFilter = A.Fake<IMxSecurityProcessingFilter>();
+            _recentlyProcessedLedger = A.Fake<IRecentlyProcessedLedger>();
             _log = A.Fake<ILogger<MxSecurityTesterProcessor>>();
 
             A.CallTo(() => _mxSecurityTesterConfig.PublishBatchSize).Returns(1);
@@ -53,6 +55,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 _mxHostTester,
                 _mxSecurityTesterConfig,
                 _processingFilter,
+                _recentlyProcessedLedger,
                 _log,
                 RunPipelineDelegate);
         }
@@ -98,6 +101,9 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Returns(Task.FromResult(list)).Once()
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
+
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
 
             var testResult = CreateMxHostTestResult();
@@ -121,6 +127,99 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId1", "ReceiptHandle1")).MustHaveHappenedOnceExactly();
             A.CallTo(() => _processingFilter.Reserve("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
             A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _recentlyProcessedLedger.Set("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
+        }
+
+        [Test]
+        public async Task RecentlyProcessedHostsAreNotProcessed()
+        {
+            var testPending = CreateMxHostTestPending();
+            List<TlsTestPending> list = new List<TlsTestPending>
+            {
+                testPending
+            };
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts())
+                .Returns(Task.FromResult(list)).Once()
+                .Then
+                .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(true);
+
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
+
+            var testResult = CreateMxHostTestResult();
+            A.CallTo(() => _mxHostTester.Test(testPending)).Returns(Task.FromResult(testResult)).Once();
+
+            A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(true);
+
+            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
+
+            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+
+            await _pipelineStartBlock.SendAsync(null);
+
+            cancellationTokenSource.Cancel();
+
+            await process;
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts()).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxHostTester.Test(testPending)).MustNotHaveHappened();
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).MustNotHaveHappened();
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId1", "ReceiptHandle1")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _processingFilter.Reserve("host.domain1.gov.uk")).MustNotHaveHappened();
+            A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _recentlyProcessedLedger.Set("host.domain1.gov.uk")).MustNotHaveHappened();
+        }
+
+        [Test]
+        public async Task HostAreProcessedAndRecentlyProcessedHostsAreNot()
+        {
+            TlsTestPending testPending1 = CreateMxHostTestPending(1);
+            TlsTestPending testPending2 = CreateMxHostTestPending(2);
+            List<TlsTestPending> list = new List<TlsTestPending>
+            {
+                testPending1,
+                testPending2
+            };
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts())
+                .Returns(Task.FromResult(list)).Once()
+                .Then
+                .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains("host.domain1.gov.uk")).Returns(false);
+            A.CallTo(() => _recentlyProcessedLedger.Contains("host.domain2.gov.uk")).Returns(true);
+
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
+
+            var testResult = CreateMxHostTestResult();
+            A.CallTo(() => _mxHostTester.Test(testPending1)).Returns(Task.FromResult(testResult)).Once();
+
+            A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(true);
+
+            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
+
+            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+
+            await _pipelineStartBlock.SendAsync(null);
+
+            cancellationTokenSource.Cancel();
+
+            await process;
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts()).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxHostTester.Test(testPending1)).MustHaveHappened();
+            A.CallTo(() => _mxHostTester.Test(testPending2)).MustNotHaveHappened();
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId1", "ReceiptHandle1")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId2", "ReceiptHandle2")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _processingFilter.Reserve("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _processingFilter.Reserve("host.domain2.gov.uk")).MustNotHaveHappened();
+            A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _processingFilter.ReleaseReservation("host.domain2.gov.uk")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _recentlyProcessedLedger.Set("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _recentlyProcessedLedger.Set("host.domain2.gov.uk")).MustNotHaveHappened();
         }
 
 
@@ -137,6 +236,8 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Returns(Task.FromResult(list)).Once()
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
 
             A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(false);
 
@@ -176,6 +277,8 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
 
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
+
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
 
             var testResult = CreateMxHostTestResult();
@@ -212,6 +315,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 _mxHostTester,
                 _mxSecurityTesterConfig,
                 _processingFilter,
+                _recentlyProcessedLedger,
                 _log,
                 RunPipelineDelegate);
 
@@ -228,6 +332,8 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Returns(Task.FromResult(firstHosts)).Once()
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
 
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
 
@@ -267,6 +373,9 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Returns(Task.FromResult(list)).Once()
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
+
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
 
             A.CallTo(() => _mxHostTester.Test(testPending)).Throws<Exception>();
@@ -305,6 +414,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Returns(Task.FromResult(list)).Once()
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
 
             var testResult = CreateMxHostTestResult();
@@ -344,7 +454,9 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Returns(Task.FromResult(list)).Once()
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
-            
+
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
+
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Throws<Exception>();
 
             var testResult = CreateMxHostTestResult();
@@ -387,6 +499,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 .Then
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
 
+            A.CallTo(() => _recentlyProcessedLedger.Contains(A<string>._)).Returns(false);
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
 
             var testResult = CreateMxHostTestResult();
@@ -412,7 +525,6 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.Reserve("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
             A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
         }
-
 
         private TlsTestPending CreateMxHostTestPending(int num = 1)
         {

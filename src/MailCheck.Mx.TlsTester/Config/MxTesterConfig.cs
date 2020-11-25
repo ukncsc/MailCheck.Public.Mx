@@ -26,6 +26,9 @@ namespace MailCheck.Mx.TlsTester.Config
         /// Number of testers instances to create - each will perform tests on a different thread (managed by TPL).
         /// </summary>
         int TlsTesterThreadCount { get; }
+
+
+        int TlsTesterHostRetestPeriodSeconds { get; }
     }
 
     public class MxTesterConfig : IMxTesterConfig
@@ -39,6 +42,7 @@ namespace MailCheck.Mx.TlsTester.Config
             PublishBatchSize = 10;
             PrintStatsIntervalSeconds = 60;
             TlsTesterThreadCount= 10;
+            TlsTesterHostRetestPeriodSeconds = environmentVariables.GetAsInt("TlsTesterHostRetestPeriodSeconds");
         }
 
         public string SnsTopicArn { get; }
@@ -48,5 +52,6 @@ namespace MailCheck.Mx.TlsTester.Config
         public string SqsQueueUrl { get; }
         public int PrintStatsIntervalSeconds { get; }
         public int TlsTesterThreadCount { get; }
+        public int TlsTesterHostRetestPeriodSeconds { get; }
     }
 }

@@ -23,4 +23,15 @@
     <Folder Include="Notifiers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Notifiers\ExampleStateResources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ExampleStateResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Notifiers\ExampleStateResources.Designer.cs">
+      <DependentUpon>ExampleStateResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

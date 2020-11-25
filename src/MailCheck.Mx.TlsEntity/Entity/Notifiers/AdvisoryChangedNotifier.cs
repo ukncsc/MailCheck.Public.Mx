@@ -7,6 +7,7 @@ using MailCheck.Mx.Contracts.SharedDomain;
 using MailCheck.Mx.Contracts.TlsEvaluator;
 using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Entity.Notifications;
+using Microsoft.Extensions.Logging;
 using Message = MailCheck.Common.Messaging.Abstractions.Message;
 
 namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
@@ -16,16 +17,18 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
         private readonly IMessageDispatcher _dispatcher;
         private readonly ITlsEntityConfig _tlsEntityConfig;
         private readonly IEqualityComparer<TlsEvaluatedResult> _messageEqualityComparer;
+        private readonly ILogger<AdvisoryChangedNotifier> _logger;
 
         public AdvisoryChangedNotifier(IMessageDispatcher dispatcher, ITlsEntityConfig tlsEntityConfig,
-            IEqualityComparer<TlsEvaluatedResult> messageEqualityComparer)
+            IEqualityComparer<TlsEvaluatedResult> messageEqualityComparer, ILogger<AdvisoryChangedNotifier> logger)
         {
             _dispatcher = dispatcher;
             _tlsEntityConfig = tlsEntityConfig;
             _messageEqualityComparer = messageEqualityComparer;
+            _logger = logger;
         }
 
-        public void Handle(TlsEntityState state, Message message)
+        public void Handle(TlsEntityState state, Message message, List<string> domains)
         {
             if (message is TlsResultsEvaluated evaluationResult)
             {
@@ -33,19 +36,46 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
 
                 List<TlsEvaluatedResult> newMessages = GetAdvisoryMessages(evaluationResult.TlsRecords);
 
-                List<TlsEvaluatedResult> addedMessages = newMessages.Except(currentMessages, _messageEqualityComparer).ToList();
+                _logger.LogInformation(
+                    $"Evaluation Result messages count: {newMessages.Count}");
+
+                List<TlsEvaluatedResult> addedMessages =
+                    newMessages.Except(currentMessages).ToList();
 
                 if (addedMessages.Any())
                 {
-                    TlsAdvisoryAdded advisoryAdded = new TlsAdvisoryAdded(state.Id, addedMessages.Select(x => new AdvisoryMessage(GetMessageType(x.Result.Value), x.Description)).ToList());
-                    _dispatcher.Dispatch(advisoryAdded, _tlsEntityConfig.SnsTopicArn);
+                    foreach (string domain in domains)
+                    {
+                        TlsAdvisoryAdded advisoryAdded = new TlsAdvisoryAdded(domain, state.Id,
+                        addedMessages.Select(x => new AdvisoryMessage(GetMessageType(x.Result.Value), x.Description))
+                            .ToList());
+                        _dispatcher.Dispatch(advisoryAdded, _tlsEntityConfig.SnsTopicArn);
+                        _logger.LogInformation(
+                            $"TlsAdvisoryAdded message dispatched to {_tlsEntityConfig.SnsTopicArn} for domain: {domain} and host: {message.Id}");
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation($"No new TlsAdvisoryAdded found for host: {message.Id}");
                 }
 
-                List<TlsEvaluatedResult> removedMessages = currentMessages.Except(newMessages, _messageEqualityComparer).ToList();
+                List<TlsEvaluatedResult> removedMessages =
+                    currentMessages.Except(newMessages).ToList();
                 if (removedMessages.Any())
                 {
-                    TlsAdvisoryRemoved advisoryRemoved = new TlsAdvisoryRemoved(state.Id, removedMessages.Select(x => new AdvisoryMessage(GetMessageType(x.Result.Value), x.Description)).ToList());
-                    _dispatcher.Dispatch(advisoryRemoved, _tlsEntityConfig.SnsTopicArn);
+                    foreach (string domain in domains)
+                    {
+                        TlsAdvisoryRemoved advisoryRemoved = new TlsAdvisoryRemoved(domain, state.Id,
+                        removedMessages.Select(x => new AdvisoryMessage(GetMessageType(x.Result.Value), x.Description))
+                            .ToList());
+                        _dispatcher.Dispatch(advisoryRemoved, _tlsEntityConfig.SnsTopicArn);
+                        _logger.LogInformation(
+                            $"TlsAdvisoryRemoved message dispatched to {_tlsEntityConfig.SnsTopicArn} for domain: {domain} and host: {message.Id}");
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation($"No new TlsAdvisoryRemoved found for host: {message.Id}");
                 }
             }
         }
@@ -54,23 +84,29 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
         {
             List<TlsEvaluatedResult> messages = new List<TlsEvaluatedResult>();
 
-            AddAdvisoryMessage(messages,
-                tlsRecords.Tls12AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages,
-                tlsRecords.Tls12AvailableWithBestCipherSuiteSelectedFromReverseList.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls12AvailableWithSha2HashFunctionSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls12AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls11AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls11AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls10AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls10AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Ssl3FailsWithBadCipherSuite.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.TlsSecureEllipticCurveSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.TlsSecureDiffieHellmanGroupSelected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.TlsWeakCipherSuitesRejected.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls12Available.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls11Available.TlsEvaluatedResult);
-            AddAdvisoryMessage(messages, tlsRecords.Tls10Available.TlsEvaluatedResult);
+            if (tlsRecords != null)
+            {
+                AddAdvisoryMessage(messages,
+                    tlsRecords.Tls12AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages,
+                    tlsRecords.Tls12AvailableWithBestCipherSuiteSelectedFromReverseList.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Tls12AvailableWithSha2HashFunctionSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages,
+                    tlsRecords.Tls12AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Tls11AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages,
+                    tlsRecords.Tls11AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Tls10AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages,
+                    tlsRecords.Tls10AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Ssl3FailsWithBadCipherSuite.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.TlsSecureEllipticCurveSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.TlsSecureDiffieHellmanGroupSelected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.TlsWeakCipherSuitesRejected.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Tls12Available.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Tls11Available.TlsEvaluatedResult);
+                AddAdvisoryMessage(messages, tlsRecords.Tls10Available.TlsEvaluatedResult);
+            }
 
             return messages;
         }

@@ -23,6 +23,7 @@ namespace MailCheck.Mx.TlsTester.Test.Factory
             System.Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID");
             System.Environment.SetEnvironmentVariable("AWS_SESSION_TOKEN", "AWS_SESSION_TOKEN");
             System.Environment.SetEnvironmentVariable("SqsQueueUrl", "SqsQueueUrl");
+            System.Environment.SetEnvironmentVariable("TlsTesterHostRetestPeriodSeconds", "1");
 
             IMxSecurityTesterProcessor mxSecurityTesterProcessorRunner = MxSecurityTesterFactory.CreateMxSecurityTesterProcessor();
             Assert.That(mxSecurityTesterProcessorRunner, Is.Not.Null);

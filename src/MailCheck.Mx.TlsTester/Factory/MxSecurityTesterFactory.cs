@@ -50,6 +50,7 @@ namespace MailCheck.Mx.TlsTester.Factory
                 .AddTransient<IAmazonSQS>(_ => new AmazonSQSClient())
                 .AddTransient<IClock, Clock>()
                 .AddTransient<ITlsClientFactory, TlsClientFactory>()
+                .AddTransient<IRecentlyProcessedLedger, RecentlyProcessedLedger>()
                 .AddSerilogLogging()
                 .BuildServiceProvider();
 

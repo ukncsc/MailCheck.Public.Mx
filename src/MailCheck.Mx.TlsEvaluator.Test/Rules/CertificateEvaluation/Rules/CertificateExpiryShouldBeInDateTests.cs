@@ -26,7 +26,8 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
         {
             HostCertificates expiredDate = Create(Create("Certificate1", DateTime.UtcNow.AddDays(-1)));
             HostCertificates sevenDaysFromToday = Create(Create("Certificate2", DateTime.UtcNow.AddDays(7)));
-            HostCertificates eightDaysFromToday = Create(Create("Certificate3", DateTime.UtcNow.AddDays(8)));
+            HostCertificates fourteenDaysFromToday = Create(Create("Certificate3", DateTime.UtcNow.AddDays(14)));
+            HostCertificates fifteenDaysFromToday = Create(Create("Certificate3", DateTime.UtcNow.AddDays(15)));
             HostCertificates thirtyDaysFromToday = Create(Create("Certificate4", DateTime.UtcNow.AddDays(30)));
             HostCertificates multipleExpiredDate = Create(Create("Certificate1", DateTime.UtcNow.AddDays(-1)), Create("Certificate2", DateTime.UtcNow.AddDays(-1)));
             HostCertificates multipleSevenDaysFromToday = Create(Create("Certificate1", DateTime.UtcNow.AddDays(7)), Create("Certificate2", DateTime.UtcNow.AddDays(7)));
@@ -38,8 +39,11 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
             yield return new TestCaseData(sevenDaysFromToday).Returns(new List<EvaluationError> { new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {sevenDaysFromToday.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
                 .SetName("Certificate expires in 7 days - fails.");
 
-            yield return new TestCaseData(eightDaysFromToday).Returns(new List<EvaluationError>())
-                .SetName("Certificate expires in 8 days - succeeds.");
+            yield return new TestCaseData(fourteenDaysFromToday).Returns(new List<EvaluationError> { new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate3 will expire on {fourteenDaysFromToday.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
+                .SetName("Certificate expires in 14 days - fails.");
+            
+            yield return new TestCaseData(fifteenDaysFromToday).Returns(new List<EvaluationError>())
+                .SetName("Certificate expires in 15 days - succeeds.");
 
             yield return new TestCaseData(thirtyDaysFromToday).Returns(new List<EvaluationError>())
                 .SetName("Certificate expires in 30 days - succeeds.");

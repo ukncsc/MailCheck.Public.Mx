@@ -15,6 +15,8 @@ using MailCheck.Mx.TlsEntity.Entity.Notifiers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using System.Collections.Generic;
+using MailCheck.Mx.Contracts.SharedDomain;
 
 namespace MailCheck.Mx.TlsEntity.StartUp
 {
@@ -37,7 +39,8 @@ namespace MailCheck.Mx.TlsEntity.StartUp
 
             services
                 .AddTransient<IClock, Clock>()
-                .AddTransient<IChangeNotifier,AdvisoryChangedNotifier>()
+                .AddTransient<IEqualityComparer<TlsEvaluatedResult>, MessageEqualityComparer>()
+                .AddTransient<IChangeNotifier, AdvisoryChangedNotifier>()
                 .AddTransient<IChangeNotifiersComposite, ChangeNotifiersComposite>()
                 .AddTransient<IConnectionInfoAsync, MySqlEnvironmentParameterStoreConnectionInfoAsync>()
                 .AddTransient<IEnvironment, EnvironmentWrapper>()

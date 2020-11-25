@@ -7,7 +7,7 @@ namespace MailCheck.Mx.Contracts.SharedDomain
     {
         public TlsRecords(List<TlsRecord> records)
         {
-            Records = records;
+            Records = records ?? new List<TlsRecord>();
         }
 
         [JsonConstructor]

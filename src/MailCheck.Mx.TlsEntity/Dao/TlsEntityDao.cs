@@ -17,6 +17,7 @@ namespace MailCheck.Mx.TlsEntity.Dao
         Task Save(TlsEntityState state);
         Task Delete(string host);
         Task<Dictionary<string, List<TlsEntityState>>> GetDomains(string hostname);
+        Task<List<string>> GetDomainsFromHost(string hostname);
     }
 
     public class TlsEntityDao : ITlsEntityDao
@@ -110,6 +111,32 @@ namespace MailCheck.Mx.TlsEntity.Dao
                         {
                             results[domain] = new List<TlsEntityState> {state};
                         }
+                    }
+                }
+
+                connection.Close();
+            }
+
+            return results;
+        }
+
+        public async Task<List<string>> GetDomainsFromHost(string hostname)
+        {
+            string connectionString = await _connectionInfo.GetConnectionStringAsync();
+
+            List<string> results = new List<string>();
+
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                await connection.OpenAsync();
+
+                using (DbDataReader reader = await MySqlHelper.ExecuteReaderAsync(connection,
+                    TlsEntityDaoResources.GetDomainsFromMxHost, new MySqlParameter("hostname", ReverseUrl(hostname))))
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        string domain = ReverseUrl(reader.GetString("domain"));
+                        results.Add(domain);
                     }
                 }
 

@@ -43,7 +43,7 @@ namespace MailCheck.Mx.Poller
             }
             catch (System.Exception ex)
             {
-                _log.LogError($"Unexpected error occured processing: {message.Id}, error: {ex.Message}");
+                _log.LogError(ex, $"Error occurred polling domain {message.Id}");
                 throw;
             }
         }

@@ -147,4 +147,9 @@ join mx.TlsEntity t on t.hostname = r2.hostname
 where r1.hostname = @hostname
     </value>
   </data>
+  <data name="GetDomainsFromMxHost" xml:space="preserve">
+    <value>SELECT domain FROM mx.MxRecord
+where hostname = @hostname;
+    </value>
+  </data>
 </root>

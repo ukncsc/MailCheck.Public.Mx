@@ -9,7 +9,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
     public class CertificateExpiryShouldBeInDate : IRule<HostCertificates>
     {
         private readonly ILogger<CertificateExpiryShouldBeInDate> _log;
-        private readonly TimeSpan _minDays = TimeSpan.FromDays(7);
+        private readonly TimeSpan _minDays = TimeSpan.FromDays(14);
 
         public CertificateExpiryShouldBeInDate(ILogger<CertificateExpiryShouldBeInDate> log)
         {

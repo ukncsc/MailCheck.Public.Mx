@@ -110,7 +110,6 @@ namespace MailCheck.Mx.Entity.Entity
                     }
                 }
             }
-            
 
             if (message.Error == null)
             { 

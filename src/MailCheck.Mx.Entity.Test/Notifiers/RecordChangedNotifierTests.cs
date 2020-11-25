@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using FakeItEasy;
 using MailCheck.Common.Messaging.Abstractions;
@@ -7,6 +8,7 @@ using MailCheck.Mx.Contracts.Poller;
 using MailCheck.Mx.Entity.Config;
 using MailCheck.Mx.Entity.Entity.Notifications;
 using MailCheck.Mx.Entity.Entity.Notifiers;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace MailCheck.Mx.Entity.Test.Notifiers
@@ -16,16 +18,16 @@ namespace MailCheck.Mx.Entity.Test.Notifiers
     {
         private IMessageDispatcher _dispatcher;
         private IMxEntityConfig _mxEntityConfig;
-        private IEqualityComparer<Message> _hostMxEqualityComparer;
         private RecordChangedNotifier _recordChangedNotifier;
+        private ILogger<RecordChangedNotifier> _logger;
 
         [SetUp]
         public void SetUp()
         {
             _dispatcher = A.Fake<IMessageDispatcher>();
             _mxEntityConfig = A.Fake<IMxEntityConfig>();
-            _hostMxEqualityComparer = new MessageEqualityComparer();
-            _recordChangedNotifier = new RecordChangedNotifier(_dispatcher, _mxEntityConfig, _hostMxEqualityComparer);
+            _logger = A.Fake<ILogger<RecordChangedNotifier>>();
+            _recordChangedNotifier = new RecordChangedNotifier(_dispatcher, _mxEntityConfig, new RecordEqualityComparer(), _logger);
         }
 
         [Test]
@@ -35,14 +37,39 @@ namespace MailCheck.Mx.Entity.Test.Notifiers
             string testHostName = "hostname";
 
             MxEntityState state = new MxEntityState(testDomain);
-            HostMxRecord record = new HostMxRecord(testHostName, 5, new List<string> {"192.168.0.1"});
-            state.HostMxRecords = new List<HostMxRecord> {record};
+            HostMxRecord record = new HostMxRecord(testHostName, 5, new List<string> {"192.168.0.1", "192.168.0.2" });
+            state.HostMxRecords = new List<HostMxRecord> { new HostMxRecord(testHostName, 5, new List<string> { "192.168.0.1" }) };
             List<HostMxRecord> hostMxRecords = new List<HostMxRecord> {record};
             MxRecordsPolled mxRecordsPolled = new MxRecordsPolled(testDomain, hostMxRecords, TimeSpan.MinValue);
 
             _recordChangedNotifier.Handle(state, mxRecordsPolled);
+            
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordAdded>._, A<string>._)).MustNotHaveHappened();
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordRemoved>._, A<string>._)).MustNotHaveHappened();
+        }
 
-            A.CallTo(() => _dispatcher.Dispatch(A<Message>._, A<string>._, A<string>._)).MustNotHaveHappened();
+        [Test]
+        public void DoesNotNotifyWhenNoChangesWithDifferentCaseType()
+        {
+            string testDomain = "domain";
+
+            MxEntityState state = new MxEntityState(testDomain)
+            {
+                HostMxRecords = new List<HostMxRecord>
+                {
+                    new HostMxRecord("HOSTNAME", 5, new List<string> {"192.168.0.1"})
+                }
+            };
+
+            List<HostMxRecord> hostMxRecords = new List<HostMxRecord>
+                {new HostMxRecord("hostname", 5, new List<string> {"192.168.0.1"})};
+
+            MxRecordsPolled mxRecordsPolled = new MxRecordsPolled(testDomain, hostMxRecords, TimeSpan.MinValue);
+
+            _recordChangedNotifier.Handle(state, mxRecordsPolled);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordAdded>._, A<string>._)).MustNotHaveHappened();
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordRemoved>._, A<string>._)).MustNotHaveHappened();
         }
 
         [Test]
@@ -63,6 +90,72 @@ namespace MailCheck.Mx.Entity.Test.Notifiers
                 .MustHaveHappenedOnceExactly();
             A.CallTo(() =>
                     _dispatcher.Dispatch(A<MxRecordAdded>.That.Matches(x => x.Id == testDomain), A<string>._))
+                .MustHaveHappenedOnceExactly();
+        }
+      
+
+        [Test]
+        public void NotifiesWhenMxPreferenceChanges()
+        {
+            string testDomain = "domain";
+            string testHostName = "hostname";
+
+            MxEntityState state = new MxEntityState(testDomain);
+
+            state.HostMxRecords = new List<HostMxRecord>
+                {new HostMxRecord(testHostName, 5, new List<string> {"192.168.0.1"})};
+
+            List<HostMxRecord> hostMxRecords = new List<HostMxRecord>
+            {
+                new HostMxRecord(testHostName, 10, new List<string> {"192.168.0.1"}),
+            };
+
+            MxRecordsPolled mxRecordsPolled = new MxRecordsPolled(testDomain, hostMxRecords, TimeSpan.MinValue);
+
+            _recordChangedNotifier.Handle(state, mxRecordsPolled);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordAdded>._, A<string>._))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() =>
+                    _dispatcher.Dispatch(A<MxRecordAdded>.That.Matches(x => x.Id == testDomain), A<string>._))
+                .MustHaveHappenedOnceExactly();
+
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordRemoved>._, A<string>._))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() =>
+                    _dispatcher.Dispatch(A<MxRecordRemoved>.That.Matches(x => x.Id == testDomain), A<string>._))
+                .MustHaveHappenedOnceExactly();
+        }
+
+        [Test]
+        public void NotifiesWhenMxHostNameChanges()
+        {
+            string testDomain = "domain";
+
+            MxEntityState state = new MxEntityState(testDomain);
+
+            state.HostMxRecords = new List<HostMxRecord>
+                {new HostMxRecord("hostname", 5, new List<string> {"192.168.0.1"})};
+
+            List<HostMxRecord> hostMxRecords = new List<HostMxRecord>
+            {
+                new HostMxRecord("hostname2", 5, new List<string> {"192.168.0.1"}),
+            };
+
+            MxRecordsPolled mxRecordsPolled = new MxRecordsPolled(testDomain, hostMxRecords, TimeSpan.MinValue);
+
+            _recordChangedNotifier.Handle(state, mxRecordsPolled);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordAdded>._, A<string>._))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() =>
+                    _dispatcher.Dispatch(A<MxRecordAdded>.That.Matches(x => x.Id == testDomain), A<string>._))
+                .MustHaveHappenedOnceExactly();
+
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordRemoved>._, A<string>._))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() =>
+                    _dispatcher.Dispatch(A<MxRecordRemoved>.That.Matches(x => x.Id == testDomain), A<string>._))
                 .MustHaveHappenedOnceExactly();
         }
 

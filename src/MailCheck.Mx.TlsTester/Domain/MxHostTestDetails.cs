@@ -4,14 +4,15 @@ namespace MailCheck.Mx.TlsTester.Domain
 {
     public class MxHostTestDetails
     {
-        public MxHostTestDetails(TlsTestResults testResults, TlsTestPending test)
+        public MxHostTestDetails(TlsTestPending test)
         {
-            TestResults = testResults;
             Test = test;
         }
 
-        public TlsTestResults TestResults { get; }
         public TlsTestPending Test { get; }
+        public string NormalizedHostname { get; set;  }
+        public TlsTestResults TestResults { get; set; }        
         public bool PublishedResultsSuccessfully { get; set; }
+        public bool SkipTesting { get; set; }
     }
 }

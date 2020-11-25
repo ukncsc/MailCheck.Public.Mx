@@ -25,8 +25,9 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
         private readonly IMxQueueProcessor _mxQueueProcessor;
         private readonly IMessagePublisher _publisher;
-        private readonly ITlsSecurityTesterAdapator  _mxHostTester;
+        private readonly ITlsSecurityTesterAdapator _mxHostTester;
         private readonly IMxSecurityProcessingFilter _processingFilter;
+        private readonly IRecentlyProcessedLedger _recentlyProcessedLedger;
         private readonly IMxTesterConfig _config;
         private readonly ILogger<MxSecurityTesterProcessor> _log;
         private readonly TimeSpan PublishBatchFlushInterval;
@@ -39,16 +40,17 @@ namespace MailCheck.Mx.TlsTester.MxTester
             ITlsSecurityTesterAdapator mxHostTester,
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
-            ILogger<MxSecurityTesterProcessor> log
-        ) : this(
+            IRecentlyProcessedLedger recentlyProcessedLedger,
+            ILogger<MxSecurityTesterProcessor> log) : this(
             mxQueueProcessor,
             publisher,
             mxHostTester,
             config,
             processingFilter,
+            recentlyProcessedLedger,
             log,
-            null
-        ) { }
+            null)
+        { }
 
         internal MxSecurityTesterProcessor(
             IMxQueueProcessor mxQueueProcessor,
@@ -56,6 +58,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             ITlsSecurityTesterAdapator mxHostTester,
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
+            IRecentlyProcessedLedger recentlyProcessedLedger,
             ILogger<MxSecurityTesterProcessor> log,
             Func<ITargetBlock<object>, CancellationToken, Task> runPipeline)
         {
@@ -64,6 +67,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _mxHostTester = mxHostTester;
             _config = config;
             _log = log;
+            _recentlyProcessedLedger = recentlyProcessedLedger;
             _processingFilter = processingFilter;
             PublishBatchFlushInterval = TimeSpan.FromSeconds(_config.PublishBatchFlushIntervalSeconds);
             PrintStatsInterval = TimeSpan.FromSeconds(_config.PrintStatsIntervalSeconds);
@@ -73,22 +77,26 @@ namespace MailCheck.Mx.TlsTester.MxTester
         public async Task Process(CancellationToken cancellationToken)
         {
             DataflowLinkOptions linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
+            DataflowLinkOptions nonPropagatingLinkOptions = new DataflowLinkOptions();
             ExecutionDataflowBlockOptions singleItemBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1, EnsureOrdered = false };
             ExecutionDataflowBlockOptions bufferBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 100, EnsureOrdered = false };
             ExecutionDataflowBlockOptions unboundedBlockOptions = new ExecutionDataflowBlockOptions { EnsureOrdered = false };
             GroupingDataflowBlockOptions batchingBlockOptions = new GroupingDataflowBlockOptions { EnsureOrdered = false };
 
-            TransformManyBlock<object, TlsTestPending> queuePoller =
-                new TransformManyBlock<object, TlsTestPending>(_ => GetMxHostToProcess(_), singleItemBlockOptions);
+            TransformManyBlock<object, MxHostTestDetails> queuePoller =
+                new TransformManyBlock<object, MxHostTestDetails>(_ => GetMxHostToProcess(_), singleItemBlockOptions);
 
-            BufferBlock<TlsTestPending> buffer = new BufferBlock<TlsTestPending>(bufferBlockOptions);
+            TransformBlock<MxHostTestDetails, MxHostTestDetails> retestPeriodFilter =
+                new TransformBlock<MxHostTestDetails, MxHostTestDetails>((Func<MxHostTestDetails, MxHostTestDetails>)MarkTestToSkip, singleItemBlockOptions);
 
-            TransformManyBlock<TlsTestPending, TlsTestPending> duplicateFilter =
-                new TransformManyBlock<TlsTestPending, TlsTestPending>(_ => FilterHosts(_), singleItemBlockOptions);
+            BufferBlock<MxHostTestDetails> buffer = new BufferBlock<MxHostTestDetails>(bufferBlockOptions);
 
-            List<TransformBlock<TlsTestPending, MxHostTestDetails>> mxTestProcessors = Enumerable
+            TransformManyBlock<MxHostTestDetails, MxHostTestDetails> duplicateFilter =
+                new TransformManyBlock<MxHostTestDetails, MxHostTestDetails>(_ => FilterHosts(_), singleItemBlockOptions);
+
+            List<TransformBlock<MxHostTestDetails, MxHostTestDetails>> mxTestProcessors = Enumerable
                 .Range(1, _config.TlsTesterThreadCount)
-                .Select(index => new TransformBlock<TlsTestPending, MxHostTestDetails>(CreateTlsTester(Guid.NewGuid()), singleItemBlockOptions))
+                .Select(index => new TransformBlock<MxHostTestDetails, MxHostTestDetails>(CreateTlsTester(Guid.NewGuid()), singleItemBlockOptions))
                 .ToList();
 
             BatchBlock<MxHostTestDetails> resultBatcher =
@@ -99,7 +107,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
                 resultBatcher.TriggerBatch();
                 _log.LogDebug("Batch triggered.");
             });
-            
+
             TransformBlock<MxHostTestDetails, MxHostTestDetails> batchFlusher =
                 new TransformBlock<MxHostTestDetails, MxHostTestDetails>(ResetTimer(timer), unboundedBlockOptions);
 
@@ -109,12 +117,15 @@ namespace MailCheck.Mx.TlsTester.MxTester
             ActionBlock<MxHostTestDetails[]> deleteFromQueue =
                 new ActionBlock<MxHostTestDetails[]>(_ => RemoveFromQueue(_), unboundedBlockOptions);
 
-            queuePoller.LinkTo(buffer, linkOptions);
+            queuePoller.LinkTo(retestPeriodFilter, linkOptions);
+            retestPeriodFilter.LinkTo(batchFlusher, nonPropagatingLinkOptions, x => x.SkipTesting);
+            retestPeriodFilter.LinkTo(buffer, linkOptions, x => !x.SkipTesting);
+
             buffer.LinkTo(duplicateFilter, linkOptions);
 
             mxTestProcessors.ForEach(processor => {
                 duplicateFilter.LinkTo(processor, linkOptions);
-                processor.LinkTo(batchFlusher); // No completion propogate here
+                processor.LinkTo(batchFlusher, nonPropagatingLinkOptions);
             });
 
             batchFlusher.LinkTo(resultBatcher, linkOptions);
@@ -161,6 +172,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             {
                 var test = tlsTestResult.Test;
                 var hostname = test.Id;
+                var normalizedHostname = tlsTestResult.NormalizedHostname;
                 var messageId = test.MessageId;
                 var receiptHandle = test.ReceiptHandle;
 
@@ -169,6 +181,11 @@ namespace MailCheck.Mx.TlsTester.MxTester
                     try
                     {
                         if (tlsTestResult.PublishedResultsSuccessfully)
+                        {
+                            _recentlyProcessedLedger.Set(normalizedHostname);
+                        }
+
+                        if (tlsTestResult.PublishedResultsSuccessfully || tlsTestResult.SkipTesting)
                         {
                             _log.LogInformation($"Deleting message from sqs for host: {hostname} - Message Id: {messageId}");
                             await _mxQueueProcessor.DeleteMessage(messageId, receiptHandle);
@@ -191,18 +208,20 @@ namespace MailCheck.Mx.TlsTester.MxTester
             }
         }
 
-        private async Task<IEnumerable<TlsTestPending>> GetMxHostToProcess(object _)
+        private async Task<IEnumerable<MxHostTestDetails>> GetMxHostToProcess(object _)
         {
-            List<TlsTestPending> hosts = new List<TlsTestPending>();
+            List<MxHostTestDetails> hosts = new List<MxHostTestDetails>();
 
             try
             {
                 _log.LogDebug("Getting mx hosts to process.");
 
-                hosts.AddRange(await _mxQueueProcessor.GetMxHosts());
+                var testsPending = await _mxQueueProcessor.GetMxHosts();
 
-                _log.LogDebug(hosts.Count > 0
-                    ? $"Found {hosts.Count} mx hosts to test: {Environment.NewLine}{string.Join(Environment.NewLine, hosts.Select(pendingTest => pendingTest.Id))}"
+                hosts.AddRange(testsPending.Select(tp => new MxHostTestDetails(tp) { NormalizedHostname = tp.Id.Trim().TrimEnd('.').ToLowerInvariant() }));
+
+                _log.LogDebug(testsPending.Count > 0
+                    ? $"Found {testsPending.Count} mx hosts to test: {Environment.NewLine}{string.Join(Environment.NewLine, testsPending.Select(pendingTest => pendingTest.Id))}"
                     : "Didn't find any hosts to test.");
             }
             catch (Exception e)
@@ -210,40 +229,53 @@ namespace MailCheck.Mx.TlsTester.MxTester
                 _log.LogError(e, $"Error occured fetching mx hosts to test");
             }
 
-            return hosts.ToArray();
+            return hosts;
         }
 
-        private IEnumerable<TlsTestPending> FilterHosts(TlsTestPending host)
+        private MxHostTestDetails MarkTestToSkip(MxHostTestDetails host)
         {
-            using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = host.Id }))
+            using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = host.Test.Id }))
             {
-                if (_processingFilter.Reserve(host.Id))
+                host.SkipTesting = _recentlyProcessedLedger.Contains(host.NormalizedHostname);
+
+                _log.LogInformation($"Host {host.Test.Id} will be {(host.SkipTesting ? "skipped" : "processed")}");
+                return host;
+            }
+        }
+
+        private IEnumerable<MxHostTestDetails> FilterHosts(MxHostTestDetails host)
+        {
+            var hostname = host.Test.Id;
+            using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = hostname }))
+            {
+                if (_processingFilter.Reserve(hostname))
                 {
                     yield return host;
                 }
             }
         }
 
-        private Func<TlsTestPending, Task<MxHostTestDetails>> CreateTlsTester(Guid testerId)
+        private Func<MxHostTestDetails, Task<MxHostTestDetails>> CreateTlsTester(Guid testerId)
         {
-            return async tlsTest =>
+            return async testDetails =>
             {
+                var tlsTest = testDetails.Test;
+
                 using (_log.BeginScope(new Dictionary<string, object> { ["TlsTesterId"] = testerId, [TlsHostLogPropertyName] = tlsTest.Id }))
                 {
                     try
                     {
                         var stopwatch = Stopwatch.StartNew();
                         _log.LogInformation($"Starting TLS test run");
-                        TlsTestResults tlsTestResults = await _mxHostTester.Test(tlsTest);
+                        testDetails.TestResults = await _mxHostTester.Test(tlsTest);
                         _log.LogInformation($"Completed TLS test run, time taken : {stopwatch.ElapsedMilliseconds}ms");
-                        return new MxHostTestDetails(tlsTestResults, tlsTest);
                     }
                     catch (Exception e)
                     {
                         _log.LogError(e, $"Error occurred during TLS test run");
                     }
 
-                    return new MxHostTestDetails(null, tlsTest);
+                    return testDetails;
                 }
             };
         }
@@ -322,7 +354,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
                 // and the buffers from the previous poll have emptied i.e. the dequeued items 
                 // have been accepted by the next block.
                 Task queuePoll = inputQueue.SendAsync(null);
-                
+
                 await Task.WhenAny(queuePoll, cancelled);
             }
         }

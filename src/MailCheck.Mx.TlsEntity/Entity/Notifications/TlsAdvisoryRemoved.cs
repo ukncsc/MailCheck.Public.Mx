@@ -5,11 +5,13 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifications
 {
     public class TlsAdvisoryRemoved : Message
     {
-        public TlsAdvisoryRemoved(string id, List<AdvisoryMessage> messages) : base(id)
+        public TlsAdvisoryRemoved(string id, string host, List<AdvisoryMessage> messages) : base(id)
         {
+            Host = host;
             Messages = messages;
         }
 
+        public string Host { get; }
         public List<AdvisoryMessage> Messages { get; }
     }
 }

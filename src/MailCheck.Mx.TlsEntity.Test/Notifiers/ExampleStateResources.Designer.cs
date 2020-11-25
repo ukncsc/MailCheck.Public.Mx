@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace MailCheck.Mx.TlsEntity.Dao {
+namespace MailCheck.Mx.TlsEntity.Test.Notifiers {
     using System;
     using System.Reflection;
     
@@ -16,21 +16,21 @@ namespace MailCheck.Mx.TlsEntity.Dao {
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class TlsEntityDaoResources {
+    public class ExampleStateResources {
         
         private static System.Resources.ResourceManager resourceMan;
         
         private static System.Globalization.CultureInfo resourceCulture;
         
         [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal TlsEntityDaoResources() {
+        internal ExampleStateResources() {
         }
         
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.Equals(null, resourceMan)) {
-                    System.Resources.ResourceManager temp = new System.Resources.ResourceManager("MailCheck.Mx.TlsEntity.Dao.TlsEntityDaoResources", typeof(TlsEntityDaoResources).Assembly);
+                    System.Resources.ResourceManager temp = new System.Resources.ResourceManager("MailCheck.Mx.TlsEntity.Test.Notifiers.ExampleStateResources", typeof(ExampleStateResources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -47,33 +47,21 @@ namespace MailCheck.Mx.TlsEntity.Dao {
             }
         }
         
-        public static string DeleteTlsEntity {
+        public static string NoAdvisoryExampleState {
             get {
-                return ResourceManager.GetString("DeleteTlsEntity", resourceCulture);
+                return ResourceManager.GetString("NoAdvisoryExampleState", resourceCulture);
             }
         }
         
-        public static string GetTlsEntity {
+        public static string OneAdvisoryExampleState {
             get {
-                return ResourceManager.GetString("GetTlsEntity", resourceCulture);
+                return ResourceManager.GetString("OneAdvisoryExampleState", resourceCulture);
             }
         }
         
-        public static string SaveTlsEntity {
+        public static string TwoAdvisoryExampleState {
             get {
-                return ResourceManager.GetString("SaveTlsEntity", resourceCulture);
-            }
-        }
-        
-        public static string GetDomainMxHosts {
-            get {
-                return ResourceManager.GetString("GetDomainMxHosts", resourceCulture);
-            }
-        }
-        
-        public static string GetDomainsFromMxHost {
-            get {
-                return ResourceManager.GetString("GetDomainsFromMxHost", resourceCulture);
+                return ResourceManager.GetString("TwoAdvisoryExampleState", resourceCulture);
             }
         }
     }

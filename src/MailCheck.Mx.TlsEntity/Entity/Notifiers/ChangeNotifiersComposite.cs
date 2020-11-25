@@ -16,11 +16,11 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
             _notifiers = notifiers;
         }
 
-        public void Handle(TlsEntityState state, Common.Messaging.Abstractions.Message message)
+        public void Handle(TlsEntityState state, Common.Messaging.Abstractions.Message message, List<string> domains)
         {
             foreach (IChangeNotifier changeNotifier in _notifiers)
             {
-                changeNotifier.Handle(state, message);
+                changeNotifier.Handle(state, message, domains);
             }
         }
     }

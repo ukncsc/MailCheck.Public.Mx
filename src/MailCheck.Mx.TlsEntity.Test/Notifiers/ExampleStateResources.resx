@@ -1,0 +1,1353 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+        <xsd:element name="root" msdata:IsDataSet="true">
+            <xsd:complexType>
+                <xsd:choice maxOccurs="unbounded">
+                    <xsd:element name="metadata">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" use="required" type="xsd:string" />
+                            <xsd:attribute name="type" type="xsd:string" />
+                            <xsd:attribute name="mimetype" type="xsd:string" />
+                            <xsd:attribute ref="xml:space" />
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="assembly">
+                        <xsd:complexType>
+                            <xsd:attribute name="alias" type="xsd:string" />
+                            <xsd:attribute name="name" type="xsd:string" />
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="data">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+                            <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+                            <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+                            <xsd:attribute ref="xml:space" />
+                        </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="resheader">
+                        <xsd:complexType>
+                            <xsd:sequence>
+                                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                            </xsd:sequence>
+                            <xsd:attribute name="name" type="xsd:string" use="required" />
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsd:choice>
+            </xsd:complexType>
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>2.0</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="NoAdvisoryExampleState" xml:space="preserve">
+    <value>{
+  "id": "mailchecktest.host.gov.uk.",
+  "created": "2020-11-05T15:29:06.9514105Z",
+  "tlsState": "Evaluated",
+  "tlsRecords": {
+    "records": [
+      {
+        "tlsEvaluatedResult": {
+          "id": "bc71fa68-abec-4584-ac7d-ed371e966b5a",
+          "type": null,
+          "result": "PASS",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": null,
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": "Secp256r1",
+          "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": "SHA1_RSA"
+        }
+      },
+      {
+        "tlsEvaluatedResult": {
+          "id": "9f200bc1-bf50-4df6-a34d-5278a82e2245",
+          "type": null,
+          "result": "PASS",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": null,
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": null,
+          "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": null
+        }
+      },
+      {
+        "tlsEvaluatedResult": {
+          "id": "80096ec0-abe4-4c19-8407-99683d32ea84",
+          "type": null,
+          "result": "PASS",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": null,
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": null,
+          "cipherSuite": "TLS_RSA_WITH_AES_256_GCM_SHA384",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": null
+        }
+      }
+    ],
+    "tls10Available": {
+      "tlsEvaluatedResult": {
+        "id": "2065e53f-e44f-487d-85be-dce4e43c0758",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "tls11Available": {
+      "tlsEvaluatedResult": {
+        "id": "7ca75f4f-1c6d-483e-872d-b6457065c20b",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "tls12Available": {
+      "tlsEvaluatedResult": {
+        "id": "66cc8900-2965-4277-b32f-e9b2078410b2",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "ssl3FailsWithBadCipherSuite": {
+      "tlsEvaluatedResult": {
+        "id": "06d693ab-16fa-41c5-9ed1-7765d85967bf",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": null,
+        "tlsError": "HANDSHAKE_FAILURE",
+        "curveGroup": null,
+        "cipherSuite": null,
+        "smtpResponses": null,
+        "errorDescription": "handshake_failure(40)",
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tlsWeakCipherSuitesRejected": {
+      "tlsEvaluatedResult": {
+        "id": "e4063bc0-f7f8-458e-8e2e-2a9c15469554",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": null,
+        "tlsError": "HANDSHAKE_FAILURE",
+        "curveGroup": null,
+        "cipherSuite": null,
+        "smtpResponses": null,
+        "errorDescription": "handshake_failure(40)",
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tlsSecureEllipticCurveSelected": {
+      "tlsEvaluatedResult": {
+        "id": "8d113ea9-ea15-45a5-94f2-bd2fb40af701",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tlsSecureDiffieHellmanGroupSelected": {
+      "tlsEvaluatedResult": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "UnknownGroup2048",
+        "cipherSuite": "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tls10AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "f163d797-5b76-4178-a335-155c519e537b",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV1",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "UNKNOWN"
+      }
+    },
+    "tls11AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "beef3102-b69e-453d-bef8-f61dea9e167c",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV11",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "UNKNOWN"
+      }
+    },
+    "tls12AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "bc71fa68-abec-4584-ac7d-ed371e966b5a",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tls12AvailableWithSha2HashFunctionSelected": {
+      "tlsEvaluatedResult": {
+        "id": "80096ec0-abe4-4c19-8407-99683d32ea84",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls10AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "a4860c91-367d-44c6-af65-e4b89b6b114f",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV1",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls11AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "29d360ef-7321-4323-9214-4b1bd9a877cb",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV11",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls12AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "b3e3973f-4b80-493c-89c8-a24658d002b9",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls12AvailableWithBestCipherSuiteSelectedFromReverseList": {
+      "tlsEvaluatedResult": {
+        "id": "9f200bc1-bf50-4df6-a34d-5278a82e2245",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    }
+  },
+  "lastUpdated": "2020-11-05T15:28:44.376Z",
+  "failureCount": 0,
+  "certificateResults": {
+    "errors": [],
+    "certificates": [
+      {
+        "issuer": "CN=Go Daddy Secure Certificate Authority - G2, OU=http://certs.godaddy.com/repository/, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=mailgate.ynysmon.gov.uk, OU=Domain Control Validated",
+        "validTo": "2022-08-03T09:32:02+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2020-06-29T07:24:47+00:00",
+        "commonName": "mailgate.ynysmon.gov.uk",
+        "thumbPrint": "D1C3284E9C1BA05039869C59717DE6FBA7FA15D8",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "00C3CF698E1575670F",
+        "subjectAlternativeName": "DNS:mailgate.ynysmon.gov.uk, DNS:www.mailgate.ynysmon.gov.uk"
+      },
+      {
+        "issuer": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=Go Daddy Secure Certificate Authority - G2, OU=http://certs.godaddy.com/repository/, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "validTo": "2031-05-03T07:00:00+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2011-05-03T07:00:00+00:00",
+        "commonName": "Go Daddy Secure Certificate Authority - G2",
+        "thumbPrint": "27AC9369FAF25207BB2627CEFACCBE4EF9C319B8",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "07",
+        "subjectAlternativeName": null
+      },
+      {
+        "issuer": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "validTo": "2037-12-31T23:59:59+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2009-09-01T00:00:00+00:00",
+        "commonName": "Go Daddy Root Certificate Authority - G2",
+        "thumbPrint": "47BEABC922EAE80E78783462A79F45C254FDE68B",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "00",
+        "subjectAlternativeName": null
+      }
+    ]
+  }
+}</value>
+  </data>
+    <data name="OneAdvisoryExampleState" xml:space="preserve">
+    <value>{
+  "id": "mailchecktest.host.gov.uk.",
+  "created": "2020-11-05T15:29:06.9514105Z",
+  "tlsState": "Evaluated",
+  "tlsRecords": {
+    "records": [
+      {
+        "tlsEvaluatedResult": {
+          "id": "bc71fa68-abec-4584-ac7d-ed371e966b5a",
+          "type": null,
+          "result": "PASS",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": null,
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": "Secp256r1",
+          "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": "SHA1_RSA"
+        }
+      },
+      {
+        "tlsEvaluatedResult": {
+          "id": "9f200bc1-bf50-4df6-a34d-5278a82e2245",
+          "type": null,
+          "result": "WARNING",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": "When testing TLS 1.2 with a range of cipher suites in reverse order the server selected a different cipher suite (TLS_RSA_WITH_3DES_EDE_CBC_SHA) which has no Perfect Forward Secrecy (PFS) and uses 3DES and SHA-1. The server should choose the same cipher suite regardless of the order that they are presented by the client.",
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": null,
+          "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": null
+        }
+      },
+      {
+        "tlsEvaluatedResult": {
+          "id": "80096ec0-abe4-4c19-8407-99683d32ea84",
+          "type": null,
+          "result": "PASS",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": null,
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": null,
+          "cipherSuite": "TLS_RSA_WITH_AES_256_GCM_SHA384",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": null
+        }
+      }
+    ],
+    "tls10Available": {
+      "tlsEvaluatedResult": {
+        "id": "2065e53f-e44f-487d-85be-dce4e43c0758",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "tls11Available": {
+      "tlsEvaluatedResult": {
+        "id": "7ca75f4f-1c6d-483e-872d-b6457065c20b",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "tls12Available": {
+      "tlsEvaluatedResult": {
+        "id": "66cc8900-2965-4277-b32f-e9b2078410b2",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "ssl3FailsWithBadCipherSuite": {
+      "tlsEvaluatedResult": {
+        "id": "06d693ab-16fa-41c5-9ed1-7765d85967bf",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": null,
+        "tlsError": "HANDSHAKE_FAILURE",
+        "curveGroup": null,
+        "cipherSuite": null,
+        "smtpResponses": null,
+        "errorDescription": "handshake_failure(40)",
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tlsWeakCipherSuitesRejected": {
+      "tlsEvaluatedResult": {
+        "id": "e4063bc0-f7f8-458e-8e2e-2a9c15469554",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": null,
+        "tlsError": "HANDSHAKE_FAILURE",
+        "curveGroup": null,
+        "cipherSuite": null,
+        "smtpResponses": null,
+        "errorDescription": "handshake_failure(40)",
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tlsSecureEllipticCurveSelected": {
+      "tlsEvaluatedResult": {
+        "id": "8d113ea9-ea15-45a5-94f2-bd2fb40af701",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tlsSecureDiffieHellmanGroupSelected": {
+      "tlsEvaluatedResult": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "UnknownGroup2048",
+        "cipherSuite": "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tls10AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "f163d797-5b76-4178-a335-155c519e537b",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV1",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "UNKNOWN"
+      }
+    },
+    "tls11AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "beef3102-b69e-453d-bef8-f61dea9e167c",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV11",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "UNKNOWN"
+      }
+    },
+    "tls12AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "bc71fa68-abec-4584-ac7d-ed371e966b5a",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tls12AvailableWithSha2HashFunctionSelected": {
+      "tlsEvaluatedResult": {
+        "id": "80096ec0-abe4-4c19-8407-99683d32ea84",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls10AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "a4860c91-367d-44c6-af65-e4b89b6b114f",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV1",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls11AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "29d360ef-7321-4323-9214-4b1bd9a877cb",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV11",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls12AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "b3e3973f-4b80-493c-89c8-a24658d002b9",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls12AvailableWithBestCipherSuiteSelectedFromReverseList": {
+      "tlsEvaluatedResult": {
+        "id": "9f200bc1-bf50-4df6-a34d-5278a82e2245",
+        "type": null,
+        "result": "WARNING",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": "When testing TLS 1.2 with a range of cipher suites in reverse order the server selected a different cipher suite (TLS_RSA_WITH_3DES_EDE_CBC_SHA) which has no Perfect Forward Secrecy (PFS) and uses 3DES and SHA-1. The server should choose the same cipher suite regardless of the order that they are presented by the client.",
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    }
+  },
+  "lastUpdated": "2020-11-05T15:28:44.376Z",
+  "failureCount": 0,
+  "certificateResults": {
+    "errors": [],
+    "certificates": [
+      {
+        "issuer": "CN=Go Daddy Secure Certificate Authority - G2, OU=http://certs.godaddy.com/repository/, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=mailgate.ynysmon.gov.uk, OU=Domain Control Validated",
+        "validTo": "2022-08-03T09:32:02+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2020-06-29T07:24:47+00:00",
+        "commonName": "mailgate.ynysmon.gov.uk",
+        "thumbPrint": "D1C3284E9C1BA05039869C59717DE6FBA7FA15D8",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "00C3CF698E1575670F",
+        "subjectAlternativeName": "DNS:mailgate.ynysmon.gov.uk, DNS:www.mailgate.ynysmon.gov.uk"
+      },
+      {
+        "issuer": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=Go Daddy Secure Certificate Authority - G2, OU=http://certs.godaddy.com/repository/, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "validTo": "2031-05-03T07:00:00+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2011-05-03T07:00:00+00:00",
+        "commonName": "Go Daddy Secure Certificate Authority - G2",
+        "thumbPrint": "27AC9369FAF25207BB2627CEFACCBE4EF9C319B8",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "07",
+        "subjectAlternativeName": null
+      },
+      {
+        "issuer": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "validTo": "2037-12-31T23:59:59+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2009-09-01T00:00:00+00:00",
+        "commonName": "Go Daddy Root Certificate Authority - G2",
+        "thumbPrint": "47BEABC922EAE80E78783462A79F45C254FDE68B",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "00",
+        "subjectAlternativeName": null
+      }
+    ]
+  }
+}</value>
+  </data>
+    <data name="TwoAdvisoryExampleState" xml:space="preserve">
+    <value>{
+  "id": "mailchecktest.host.gov.uk.",
+  "created": "2020-11-05T15:29:06.9514105Z",
+  "tlsState": "Evaluated",
+  "tlsRecords": {
+    "records": [
+      {
+        "tlsEvaluatedResult": {
+          "id": "bc71fa68-abec-4584-ac7d-ed371e966b5a",
+          "type": null,
+          "result": "FAIL",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": "Error TLS 1.2 not recognised",
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": "Secp256r1",
+          "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": "SHA1_RSA"
+        }
+      },
+      {
+        "tlsEvaluatedResult": {
+          "id": "9f200bc1-bf50-4df6-a34d-5278a82e2245",
+          "type": null,
+          "result": "WARNING",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": "When testing TLS 1.2 with a range of cipher suites in reverse order the server selected a different cipher suite (TLS_RSA_WITH_3DES_EDE_CBC_SHA) which has no Perfect Forward Secrecy (PFS) and uses 3DES and SHA-1. The server should choose the same cipher suite regardless of the order that they are presented by the client.",
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": null,
+          "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": null
+        }
+      },
+      {
+        "tlsEvaluatedResult": {
+          "id": "80096ec0-abe4-4c19-8407-99683d32ea84",
+          "type": null,
+          "result": "PASS",
+          "messageId": null,
+          "timestamp": "0001-01-01T00:00:00",
+          "causationId": null,
+          "description": null,
+          "correlationId": null
+        },
+        "bouncyCastleTlsTestResult": {
+          "version": "TlsV12",
+          "tlsError": null,
+          "curveGroup": null,
+          "cipherSuite": "TLS_RSA_WITH_AES_256_GCM_SHA384",
+          "smtpResponses": null,
+          "errorDescription": null,
+          "signatureHashAlgorithm": null
+        }
+      }
+    ],
+    "tls10Available": {
+    "tlsEvaluatedResult": {
+        "id": "2065e53f-e44f-487d-85be-dce4e43c0758",
+        "type": null,
+        "result": "FAIL",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": "When testing TLS 1.0 we were unable to create a connection",
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "tls11Available": {
+      "tlsEvaluatedResult": {
+        "id": "7ca75f4f-1c6d-483e-872d-b6457065c20b",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "tls12Available": {
+      "tlsEvaluatedResult": {
+        "id": "66cc8900-2965-4277-b32f-e9b2078410b2",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": null
+    },
+    "ssl3FailsWithBadCipherSuite": {
+      "tlsEvaluatedResult": {
+        "id": "06d693ab-16fa-41c5-9ed1-7765d85967bf",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": null,
+        "tlsError": "HANDSHAKE_FAILURE",
+        "curveGroup": null,
+        "cipherSuite": null,
+        "smtpResponses": null,
+        "errorDescription": "handshake_failure(40)",
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tlsWeakCipherSuitesRejected": {
+      "tlsEvaluatedResult": {
+        "id": "e4063bc0-f7f8-458e-8e2e-2a9c15469554",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": null,
+        "tlsError": "HANDSHAKE_FAILURE",
+        "curveGroup": null,
+        "cipherSuite": null,
+        "smtpResponses": null,
+        "errorDescription": "handshake_failure(40)",
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tlsSecureEllipticCurveSelected": {
+      "tlsEvaluatedResult": {
+        "id": "8d113ea9-ea15-45a5-94f2-bd2fb40af701",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tlsSecureDiffieHellmanGroupSelected": {
+      "tlsEvaluatedResult": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "UnknownGroup2048",
+        "cipherSuite": "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tls10AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "f163d797-5b76-4178-a335-155c519e537b",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV1",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "UNKNOWN"
+      }
+    },
+    "tls11AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "beef3102-b69e-453d-bef8-f61dea9e167c",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV11",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "UNKNOWN"
+      }
+    },
+    "tls12AvailableWithBestCipherSuiteSelected": {
+      "tlsEvaluatedResult": {
+        "id": "bc71fa68-abec-4584-ac7d-ed371e966b5a",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": "Secp256r1",
+        "cipherSuite": "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": "SHA1_RSA"
+      }
+    },
+    "tls12AvailableWithSha2HashFunctionSelected": {
+      "tlsEvaluatedResult": {
+        "id": "80096ec0-abe4-4c19-8407-99683d32ea84",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls10AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "a4860c91-367d-44c6-af65-e4b89b6b114f",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV1",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls11AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "29d360ef-7321-4323-9214-4b1bd9a877cb",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV11",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls12AvailableWithWeakCipherSuiteNotSelected": {
+      "tlsEvaluatedResult": {
+        "id": "b3e3973f-4b80-493c-89c8-a24658d002b9",
+        "type": null,
+        "result": "PASS",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": null,
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    },
+    "tls12AvailableWithBestCipherSuiteSelectedFromReverseList": {
+      "tlsEvaluatedResult": {
+        "id": "9f200bc1-bf50-4df6-a34d-5278a82e2245",
+        "type": null,
+        "result": "WARNING",
+        "messageId": null,
+        "timestamp": "0001-01-01T00:00:00",
+        "causationId": null,
+        "description": "When testing TLS 1.2 with a range of cipher suites in reverse order the server selected a different cipher suite (TLS_RSA_WITH_3DES_EDE_CBC_SHA) which has no Perfect Forward Secrecy (PFS) and uses 3DES and SHA-1. The server should choose the same cipher suite regardless of the order that they are presented by the client.",
+        "correlationId": null
+      },
+      "bouncyCastleTlsTestResult": {
+        "version": "TlsV12",
+        "tlsError": null,
+        "curveGroup": null,
+        "cipherSuite": "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        "smtpResponses": null,
+        "errorDescription": null,
+        "signatureHashAlgorithm": null
+      }
+    }
+  },
+  "lastUpdated": "2020-11-05T15:28:44.376Z",
+  "failureCount": 0,
+  "certificateResults": {
+    "errors": [],
+    "certificates": [
+      {
+        "issuer": "CN=Go Daddy Secure Certificate Authority - G2, OU=http://certs.godaddy.com/repository/, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=mailgate.ynysmon.gov.uk, OU=Domain Control Validated",
+        "validTo": "2022-08-03T09:32:02+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2020-06-29T07:24:47+00:00",
+        "commonName": "mailgate.ynysmon.gov.uk",
+        "thumbPrint": "D1C3284E9C1BA05039869C59717DE6FBA7FA15D8",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "00C3CF698E1575670F",
+        "subjectAlternativeName": "DNS:mailgate.ynysmon.gov.uk, DNS:www.mailgate.ynysmon.gov.uk"
+      },
+      {
+        "issuer": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=Go Daddy Secure Certificate Authority - G2, OU=http://certs.godaddy.com/repository/, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "validTo": "2031-05-03T07:00:00+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2011-05-03T07:00:00+00:00",
+        "commonName": "Go Daddy Secure Certificate Authority - G2",
+        "thumbPrint": "27AC9369FAF25207BB2627CEFACCBE4EF9C319B8",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "07",
+        "subjectAlternativeName": null
+      },
+      {
+        "issuer": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "subject": "CN=Go Daddy Root Certificate Authority - G2, O=\"GoDaddy.com, Inc.\", L=Scottsdale, S=Arizona, C=US",
+        "validTo": "2037-12-31T23:59:59+00:00",
+        "version": "3",
+        "keyLength": 2048,
+        "validFrom": "2009-09-01T00:00:00+00:00",
+        "commonName": "Go Daddy Root Certificate Authority - G2",
+        "thumbPrint": "47BEABC922EAE80E78783462A79F45C254FDE68B",
+        "keyAlgoritm": "RSA",
+        "serialNumber": "00",
+        "subjectAlternativeName": null
+      }
+    ]
+  }
+}</value>
+  </data>
+</root>

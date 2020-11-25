@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
@@ -14,6 +15,7 @@ using MailCheck.Mx.Contracts.TlsEvaluator;
 using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Dao;
 using MailCheck.Mx.TlsEntity.Entity.DomainStatus;
+using MailCheck.Mx.TlsEntity.Entity.Notifiers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -31,6 +33,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
         private readonly ITlsEntityConfig _tlsEntityConfig;
         private readonly IMessageDispatcher _dispatcher;
         private readonly IDomainStatusPublisher _domainStatusPublisher;
+        private readonly IChangeNotifiersComposite _changeNotifiersComposite;
         private const string ServiceName = "Tls";
 
         public TlsEntity(ITlsEntityDao dao,
@@ -38,6 +41,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
             ITlsEntityConfig tlsEntityConfig,
             IMessageDispatcher dispatcher,
             IDomainStatusPublisher domainStatusPublisher,
+            IChangeNotifiersComposite changeNotifiersComposite,
             ILogger<TlsEntity> log)
         {
             _dao = dao;
@@ -46,42 +50,36 @@ namespace MailCheck.Mx.TlsEntity.Entity
             _domainStatusPublisher = domainStatusPublisher;
             _tlsEntityConfig = tlsEntityConfig;
             _dispatcher = dispatcher;
+            _changeNotifiersComposite = changeNotifiersComposite;
         }
         
         public async Task Handle(TlsScheduledReminder message)
         {
-            string hostName = message.ResourceId.ToLower();
-
-            TlsEntityState state = await LoadState(hostName, nameof(message));
-
-            state.TlsState = TlsState.PollPending;
-
-            await _dao.Save(state);
-
-            _dispatcher.Dispatch(new TlsTestPending(hostName), _tlsEntityConfig.SnsTopicArn);
+            await HandleReadyToPoll(message.ResourceId.ToLower(), nameof(message));
         }
 
         public async Task Handle(MxHostTestPending message)
         {
-            string hostName = message.Id.ToLower();
+            await HandleReadyToPoll(message.Id.ToLower(), nameof(message));
+        }
 
-            TlsEntityState state = await LoadState(hostName, nameof(message));
-            
-            if (state.LastUpdated == null || _clock.GetDateTimeUtc() >
-                state.LastUpdated.Value.AddSeconds(_tlsEntityConfig.TlsResultsCacheInSeconds))
+        private async Task HandleReadyToPoll(string hostName, string messageType)
+        {
+            TlsEntityState state = await LoadState(hostName, messageType);
+
+            if (state.LastUpdated == null || _clock.GetDateTimeUtc() > state.LastUpdated.Value.AddSeconds(_tlsEntityConfig.TlsResultsCacheInSeconds))
             {
                 state.TlsState = TlsState.PollPending;
 
                 await _dao.Save(state);
 
                 _dispatcher.Dispatch(new TlsTestPending(hostName), _tlsEntityConfig.SnsTopicArn);
-                _log.LogInformation(
-                    $"A TlsTestPending message for host: {hostName} has been dispatched to SnsTopic: {_tlsEntityConfig.SnsTopicArn}");
+                _log.LogInformation($"A TlsTestPending message for host: {hostName} has been dispatched to SnsTopic: {_tlsEntityConfig.SnsTopicArn}");
             }
             else
             {
-                _dispatcher.Dispatch(new TlsRecordEvaluationsChanged(hostName, state.TlsRecords, state.CertificateResults),
-                    _tlsEntityConfig.SnsTopicArn);
+                _log.LogInformation($"A request to re-test {hostName} was ignored as it was last tested at {state.LastUpdated.Value} and the re-test cache " +
+                                    $"is {TimeSpan.FromSeconds(_tlsEntityConfig.TlsResultsCacheInSeconds):dd\\d\\:hh\\h\\:mm\\m\\:ss\\s}."); // dd/hh/mm/ss
             }
         }
 
@@ -101,9 +99,13 @@ namespace MailCheck.Mx.TlsEntity.Entity
             if (!message.Failed ||
                 message.Failed && state.FailureCount >= _tlsEntityConfig.MaxTlsRetryAttempts)
             {
+                List<string> domains = await _dao.GetDomainsFromHost(messageId);
+                _changeNotifiersComposite.Handle(state, message, domains);
+
                 state.CertificateResults = message.Certificates;
                 state.TlsRecords = message.TlsRecords;
                 state.LastUpdated = message.Timestamp;
+
                 await _dao.Save(state);
 
                 _dispatcher.Dispatch(new TlsRecordEvaluationsChanged(messageId, state.TlsRecords, state.CertificateResults),

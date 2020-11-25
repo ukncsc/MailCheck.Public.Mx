@@ -8,6 +8,7 @@ using MailCheck.Common.Environment.Implementations;
 using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.Common.SSM;
 using MailCheck.Common.Util;
+using MailCheck.Mx.Contracts.Poller;
 using MailCheck.Mx.Entity.Config;
 using MailCheck.Mx.Entity.Dao;
 using MailCheck.Mx.Entity.Entity;
@@ -31,7 +32,7 @@ namespace MailCheck.Mx.Entity.StartUp
                 .AddTransient<IMxEntityConfig, MxEntityConfig>()
                 .AddTransient<IChangeNotifiersComposite, ChangeNotifiersComposite>()
                 .AddTransient<IChangeNotifier, RecordChangedNotifier>()
-                .AddTransient<IEqualityComparer<Message>, MessageEqualityComparer>()
+                .AddTransient<IEqualityComparer<HostMxRecord>, RecordEqualityComparer>()
                 .AddTransient<MxEntity>();
         }
     }
