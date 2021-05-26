@@ -31,5 +31,10 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation
         {
             return bouncyCastleTlsTestResult.TlsError == TlsError.HANDSHAKE_FAILURE;
         }
+
+        public static bool InsufficientSecurity(this BouncyCastleTlsTestResult bouncyCastleTlsTestResult)
+        {
+            return bouncyCastleTlsTestResult.TlsError == TlsError.INSUFFICIENT_SECURITY;
+        }
     }
 }

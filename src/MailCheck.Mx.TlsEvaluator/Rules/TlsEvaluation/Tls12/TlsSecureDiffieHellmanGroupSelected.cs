@@ -70,6 +70,10 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls12
                     return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId3, EvaluatorResult.WARNING,
                         string.Format(intro, $"the server selected an unknown 1024 bit group. {advice}")).ToTaskList();
 
+                case CurveGroup.UnknownGroup1536:
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId3, EvaluatorResult.WARNING,
+                        string.Format(intro, $"the server selected an unknown 1536 bit group. {advice}")).ToTaskList();
+
                 case CurveGroup.Java1024:
                 case CurveGroup.Rfc2409_1024:
                 case CurveGroup.Rfc5114_1024:

@@ -9,6 +9,8 @@ namespace MailCheck.Mx.TlsTester.Config
         string SqsQueueUrl { get; }
         string SmtpHostName { get; }
 
+        int BufferSize { get; }
+
         /// <summary>
         /// Batch up results before publishing into batches of this size.
         /// </summary>
@@ -21,6 +23,12 @@ namespace MailCheck.Mx.TlsTester.Config
         int PublishBatchFlushIntervalSeconds { get; }
 
         int PrintStatsIntervalSeconds { get; }
+
+        /// <summary>
+        /// Threshold in seconds at which the test completion time for a host is considered 
+        /// slow and will be pushed to the slow lane
+        /// </summary>
+        int SlowResponseThresholdSeconds { get; }
 
         /// <summary>
         /// Number of testers instances to create - each will perform tests on a different thread (managed by TPL).
@@ -38,19 +46,24 @@ namespace MailCheck.Mx.TlsTester.Config
             SnsTopicArn = environmentVariables.Get("SnsTopicArn");
             SqsQueueUrl = environmentVariables.Get("SqsQueueUrl");
             SmtpHostName = environmentVariables.Get("SmtpHostName");
-            PublishBatchFlushIntervalSeconds = 30;
-            PublishBatchSize = 10;
-            PrintStatsIntervalSeconds = 60;
-            TlsTesterThreadCount= 10;
+            BufferSize = environmentVariables.GetAsInt("BufferSize");
+            PublishBatchFlushIntervalSeconds = environmentVariables.GetAsInt("PublishBatchFlushIntervalSeconds");
+            PublishBatchSize = environmentVariables.GetAsInt("PublishBatchSize");
+            PrintStatsIntervalSeconds = environmentVariables.GetAsInt("PrintStatsIntervalSeconds");
+            SlowResponseThresholdSeconds = environmentVariables.GetAsInt("SlowResponseThresholdSeconds");
             TlsTesterHostRetestPeriodSeconds = environmentVariables.GetAsInt("TlsTesterHostRetestPeriodSeconds");
+            TlsTesterThreadCount = environmentVariables.GetAsInt("TlsTesterThreadCount");
         }
 
         public string SnsTopicArn { get; }
         public string SmtpHostName { get; }
+        public string SqsQueueUrl { get; }
+        public int BufferSize { get; }
+        public int RefreshIntervalSeconds { get; }
         public int PublishBatchFlushIntervalSeconds { get; }
         public int PublishBatchSize { get; }
-        public string SqsQueueUrl { get; }
         public int PrintStatsIntervalSeconds { get; }
+        public int SlowResponseThresholdSeconds { get; }
         public int TlsTesterThreadCount { get; }
         public int TlsTesterHostRetestPeriodSeconds { get; }
     }

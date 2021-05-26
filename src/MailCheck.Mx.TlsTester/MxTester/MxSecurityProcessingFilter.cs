@@ -26,7 +26,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
         public bool Reserve(string host)
         {
             _log.LogDebug($"Attempting to add reservation for host: {host}");
-            var result = _filterItems.TryAdd(host, null);
+            bool result = _filterItems.TryAdd(host, null);
             if (result)
             {
                 _log.LogDebug($"Reservation added for host: {host}");

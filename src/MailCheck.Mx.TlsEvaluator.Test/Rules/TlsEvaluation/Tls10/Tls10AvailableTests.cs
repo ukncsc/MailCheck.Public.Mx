@@ -49,7 +49,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls10
 
             Assert.That(ruleTypedTlsEvaluationResults.Count, Is.EqualTo(1));
             Assert.That(ruleTypedTlsEvaluationResults[0].TlsEvaluatedResult.Result, Is.EqualTo(EvaluatorResult.INFORMATIONAL));
-            StringAssert.StartsWith("This server refused to negotiate using TLS 1.0", ruleTypedTlsEvaluationResults[0].TlsEvaluatedResult.Description);
+            StringAssert.StartsWith("This server does not support TLS 1.0", ruleTypedTlsEvaluationResults[0].TlsEvaluatedResult.Description);
         }
 
         [Test]

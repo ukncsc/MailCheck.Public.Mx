@@ -5,6 +5,8 @@ namespace MailCheck.Mx.Contracts.Tester
 {
     public class TlsTestResults : Common.Messaging.Abstractions.Message
     {
+        private TlsTestResults() : base(string.Empty) {}
+
         public TlsTestResults(string id,
            bool failed,
            bool hostNotFound,
@@ -58,5 +60,10 @@ namespace MailCheck.Mx.Contracts.Tester
         public BouncyCastleTlsTestResult TlsWeakCipherSuitesRejected { get; }
         public List<SelectedCipherSuite> SelectedCipherSuites { get; }
         public List<string> Certificates { get; }
+
+        public static TlsTestResults CreateNullResults()
+        {
+            return new TlsTestResults();
+        }
     }
 }

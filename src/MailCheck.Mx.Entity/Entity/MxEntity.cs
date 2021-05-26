@@ -18,8 +18,8 @@ namespace MailCheck.Mx.Entity.Entity
     public class MxEntity:
         IHandle<DomainCreated>,
         IHandle<MxScheduledReminder>,
-        IHandle<MxRecordsPolled>,
-        IHandle<DomainDeleted>
+        IHandle<DomainDeleted>,
+        IHandle<MxRecordsPolled>
     {
         private readonly IMxEntityDao _dao;
         private readonly IMxEntityConfig _mxEntityConfig;
@@ -67,6 +67,17 @@ namespace MailCheck.Mx.Entity.Entity
             _dispatcher.Dispatch(createScheduledReminder, _mxEntityConfig.SnsTopicArn);
             _log.LogInformation(
                 $"A CreateScheduledReminder message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
+
+            Message entityChanged = new EntityChanged(domainName)
+            {
+                RecordType = "MX",
+                ChangedAt = DateTime.UtcNow,
+                NewEntityDetail = state,
+                ReasonForChange = nameof(DomainCreated)
+            };
+            _dispatcher.Dispatch(entityChanged, _mxEntityConfig.SnsTopicArn);
+            _log.LogInformation(
+                $"An EntityChanged message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
         }
         
         public async Task Handle(MxScheduledReminder message)
@@ -82,7 +93,41 @@ namespace MailCheck.Mx.Entity.Entity
             _log.LogInformation(
                 $"An MxPollPending message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
         }
-        
+
+        public async Task Handle(DomainDeleted message)
+        {
+            string domainName = message.Id.ToLower();
+
+            MxEntityState state = await LoadState(domainName, nameof(message));
+
+            if (state.HostMxRecords != null && state.HostMxRecords.Count > 0) {
+                List<string> uniqueHosts = await _dao.GetHostsUniqueToDomain(domainName);
+                if (uniqueHosts.Count > 0)
+                {
+                    await _dao.DeleteHosts(uniqueHosts);
+                    foreach (string host in uniqueHosts)
+                    {
+                        _dispatcher.Dispatch(new MxHostDeleted(host), _mxEntityConfig.SnsTopicArn);
+                        _log.LogInformation($"An MxHostDeleted message for Host: {host} has been dispatched to the SnsTopic: {_mxEntityConfig.SnsTopicArn}");
+                    }
+                }
+            }
+
+            await _dao.Delete(domainName);
+            _log.LogInformation($"Deleted MX entity with id: {message.Id}.");
+
+            Message entityChanged = new EntityChanged(domainName)
+            {
+                RecordType = "MX",
+                ChangedAt = DateTime.UtcNow,
+                NewEntityDetail = state,
+                ReasonForChange = nameof(DomainDeleted)
+            };
+            _dispatcher.Dispatch(entityChanged, _mxEntityConfig.SnsTopicArn);
+            _log.LogInformation(
+                $"An EntityChanged message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
+        }
+
         public async Task Handle(MxRecordsPolled message)
         {
             string domainName = message.Id.ToLower();
@@ -112,10 +157,10 @@ namespace MailCheck.Mx.Entity.Entity
             }
 
             if (message.Error == null)
-            { 
+            {
                 state.HostMxRecords = validHostRecords;
             }
-            
+
             state.LastUpdated = message.Timestamp;
             state.Error = message.Error;
             state.MxState = MxState.Evaluated;
@@ -133,32 +178,26 @@ namespace MailCheck.Mx.Entity.Entity
                 _log.LogInformation($"An MxHostTestPending message for Host: {mxRecord.Id} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
             });
 
-            Message createScheduledReminder = new CreateScheduledReminder(Guid.NewGuid().ToString(), "Mx", domainName, _clock.GetDateTimeUtc().AddSeconds(_mxEntityConfig.NextScheduledInSeconds));
+            Message createScheduledReminder = new CreateScheduledReminder(
+                Guid.NewGuid().ToString(),
+                "Mx",
+                domainName,
+                _clock.GetDateTimeUtc().AddSeconds(_mxEntityConfig.NextScheduledInSeconds * (1 - new Random().NextDouble() * 0.25))
+            );
+            
             _dispatcher.Dispatch(createScheduledReminder, _mxEntityConfig.SnsTopicArn);
             _log.LogInformation($"A CreateScheduledReminder message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
-        }
-        
-        public async Task Handle(DomainDeleted message)
-        {
-            string domainName = message.Id.ToLower();
 
-            MxEntityState state = await LoadState(domainName, nameof(message));
-            
-            if (state.HostMxRecords != null && state.HostMxRecords.Count > 0) {
-                List<string> uniqueHosts = await _dao.GetHostsUniqueToDomain(domainName);
-                if (uniqueHosts.Count > 0)
-                {
-                    await _dao.DeleteHosts(uniqueHosts);
-                    foreach (string host in uniqueHosts)
-                    {
-                        _dispatcher.Dispatch(new MxHostDeleted(host), _mxEntityConfig.SnsTopicArn);
-                        _log.LogInformation($"An MxHostDeleted message for Host: {host} has been dispatched to the SnsTopic: {_mxEntityConfig.SnsTopicArn}");
-                    }
-                }
-            }
-
-            await _dao.Delete(domainName);
-            _log.LogInformation($"Deleted MX entity with id: {message.Id}.");
+            Message entityChanged = new EntityChanged(domainName)
+            {
+                RecordType = "MX",
+                ChangedAt = DateTime.UtcNow,
+                NewEntityDetail = state,
+                ReasonForChange = nameof(MxRecordsPolled)
+            };
+            _dispatcher.Dispatch(entityChanged, _mxEntityConfig.SnsTopicArn);
+            _log.LogInformation(
+                $"An EntityChanged message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
         }
 
         private async Task<MxEntityState> LoadState(string domainName, string messageType)

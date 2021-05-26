@@ -11,8 +11,8 @@ namespace MailCheck.Mx.BouncyCastle.KeyExchange
     {
         private SignatureAndHashAlgorithm mSignatureAndHashAlgorithm;
 
-        public TestTlsDheKeyExchange(int keyExchange, IList supportedSignatureAlgorithms, DHParameters dhParameters) 
-            : base(keyExchange, supportedSignatureAlgorithms, dhParameters)
+        public TestTlsDheKeyExchange(int keyExchange, IList supportedSignatureAlgorithms, TlsDHVerifier tlsDHVerifier, DHParameters dhParameters)
+            : base(keyExchange, supportedSignatureAlgorithms, tlsDHVerifier, dhParameters)
         {
         }
 
@@ -27,19 +27,16 @@ namespace MailCheck.Mx.BouncyCastle.KeyExchange
             SignerInputBuffer buf = new SignerInputBuffer();
             Stream teeIn = new TeeInputStream(input, buf);
 
-            ServerDHParams dhParams = ServerDHParams.Parse(teeIn);
+            this.mDHParameters = TlsDHUtilities.ReceiveDHParameters(mDHVerifier, teeIn);
+            this.mDHAgreePublicKey = new DHPublicKeyParameters(TlsDHUtilities.ReadDHParameter(teeIn), mDHParameters);
 
             DigitallySigned signed_params = ParseSignature(input);
-
             mSignatureAndHashAlgorithm = signed_params.Algorithm;
 
             ISigner signer = InitVerifyer(mTlsSigner, signed_params.Algorithm, securityParameters);
             buf.UpdateSigner(signer);
             if (!signer.VerifySignature(signed_params.Signature))
                 throw new TlsFatalAlert(AlertDescription.decrypt_error);
-
-            this.mDHAgreePublicKey = TlsDHUtilities.ValidateDHPublicKey(dhParams.PublicKey);
-            this.mDHParameters = ValidateDHParameters(mDHAgreePublicKey.Parameters);
         }
     }
 }

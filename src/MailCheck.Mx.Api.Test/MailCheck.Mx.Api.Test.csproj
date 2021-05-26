@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="FakeItEasy" Version="5.0.1" />
-    <PackageReference Include="MailCheck.Common.TestSupport" Version="4.0.0" />
+    <PackageReference Include="MailCheck.Common.TestSupport" Version="5.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="2.1.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />

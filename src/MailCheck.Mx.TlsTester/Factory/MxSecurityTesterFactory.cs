@@ -1,5 +1,4 @@
 ﻿using System;
-using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleSystemsManagement;
 using Amazon.SQS;
@@ -14,6 +13,7 @@ using MailCheck.Mx.TlsTester.Config;
 using MailCheck.Mx.TlsTester.MxTester;
 using MailCheck.Mx.TlsTester.Tls;
 using MailCheck.Mx.TlsTester.Tls.Tests;
+using MailCheck.Mx.TlsTester.Util;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MailCheck.Mx.TlsTester.Factory
@@ -49,6 +49,7 @@ namespace MailCheck.Mx.TlsTester.Factory
                 .AddTransient<IMessagePublisher, SnsMessagePublisher>()
                 .AddTransient<IAmazonSQS>(_ => new AmazonSQSClient())
                 .AddTransient<IClock, Clock>()
+                .AddTransient<IHostClassifier, HostClassifier>()
                 .AddTransient<ITlsClientFactory, TlsClientFactory>()
                 .AddTransient<IRecentlyProcessedLedger, RecentlyProcessedLedger>()
                 .AddSerilogLogging()

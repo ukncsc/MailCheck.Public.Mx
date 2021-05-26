@@ -16,35 +16,21 @@ namespace MailCheck.Mx.Poller.Test
     {
         private IDnsClient _dnsClient;
         private IMxProcessor _mxProcessor;
-        private IMxPollerConfig _config;
         private ILogger<MxProcessor> _log;
 
         [SetUp]
         public void SetUp()
         {
             _dnsClient = A.Fake<IDnsClient>();
-            _config = A.Fake<IMxPollerConfig>();
             _log = A.Fake<ILogger<MxProcessor>>();
 
-            _mxProcessor = new MxProcessor(_dnsClient, _config, _log);
+            _mxProcessor = new MxProcessor(_dnsClient, _log);
         }
 
         [Test]
-        public async Task MxExceptionThrownWhenAllowNullResultsNotSetAndEmptyResult()
+        public async Task MxExceptionNotThrownWhenEmptyResult()
         {
             string domain = "abc.com";
-
-            A.CallTo(() => _config.AllowNullResults).Returns(false);
-
-            Assert.Throws<MxPollerException>(() => _mxProcessor.Process(domain).GetAwaiter().GetResult());
-        }
-
-        [Test]
-        public async Task MxExceptionNotThrownWhenAllowNullResultsSetAndEmptyResult()
-        {
-            string domain = "abc.com";
-
-            A.CallTo(() => _config.AllowNullResults).Returns(true);
 
             MxPollResult result = await _mxProcessor.Process(domain);
 
@@ -56,10 +42,8 @@ namespace MailCheck.Mx.Poller.Test
         {
             string domain = "abc.com";
 
-            A.CallTo(() => _config.AllowNullResults).Returns(true);
-
             A.CallTo(() => _dnsClient.GetMxRecords(A<string>._))
-                .Returns(new DnsResult<List<HostMxRecord>>("error"));
+                .Returns(new DnsResult<List<HostMxRecord>>("error", "audit"));
 
             MxPollResult result = await _mxProcessor.Process(domain);
             Assert.That(domain, Is.EqualTo(result.Id));

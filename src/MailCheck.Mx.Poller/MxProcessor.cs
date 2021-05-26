@@ -19,15 +19,12 @@ namespace MailCheck.Mx.Poller
     public class MxProcessor : IMxProcessor
     {
         private readonly IDnsClient _dnsClient;
-        private readonly IMxPollerConfig _config;
         private readonly ILogger<MxProcessor> _log;
 
         public MxProcessor(IDnsClient dnsClient,
-            IMxPollerConfig config,
             ILogger<MxProcessor> log)
         {
             _dnsClient = dnsClient;
-            _config = config;
             _log = log;
         }
 
@@ -41,22 +38,20 @@ namespace MailCheck.Mx.Poller
 
             stopwatch.Stop();
 
-            if (!_config.AllowNullResults && (mxHosts.IsErrored ||
-                                              mxHosts.Value.TrueForAll(x => string.IsNullOrWhiteSpace(x.Id))))
-            {
-                throw new MxPollerException($"Unable to retrieve mx hosts for {domain}.");
-            }
+            _log.LogDebug($"DNS lookup for MX records for domain {domain} took {stopwatch.ElapsedMilliseconds}ms");
 
             if (mxHosts.IsErrored)
             {
+                _log.LogWarning($"DNS lookup for MX records for domain {domain} errored: {mxHosts.Error}{Environment.NewLine}{mxHosts.AuditTrail}");
+
                 return new MxPollResult(domain,
                     new Error(Id, ErrorType.Error,
                         $"Failed MX hosts query for {domain} with error {mxHosts.Error}", string.Empty));
             }
 
-            if (mxHosts.IsErrored)
+            if (mxHosts.Value.TrueForAll(x => string.IsNullOrWhiteSpace(x.Id)))
             {
-                _log.LogError($"Processed request for MX records in {stopwatch.ElapsedMilliseconds} for domain: {domain}");
+                _log.LogWarning($"MX records missing or empty for domain {domain}");
             }
 
             return new MxPollResult(domain, mxHosts.Value, stopwatch.Elapsed);

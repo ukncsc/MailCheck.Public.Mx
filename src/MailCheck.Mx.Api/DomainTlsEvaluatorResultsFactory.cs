@@ -29,7 +29,7 @@ namespace MailCheck.Mx.Api
                 new List<MxTlsCertificateEvaluatorResults>();
 
             foreach (HostMxRecord hostMxRecord in mxState.HostMxRecords)
-            { 
+            {
                 // tlsEntityStates keys are always lowercase due to ReverseUrl() in MxApiDao.GetTlsEntityStates
                 TlsEntityState tlsEntityState = tlsEntityStates[hostMxRecord.Id.ToLower()];
 
@@ -56,6 +56,9 @@ namespace MailCheck.Mx.Api
                     records.Add(tlsRecords.Tls10Available);
                 }
 
+                List<string> positives = records.Where(_ => _.TlsEvaluatedResult.Result == EvaluatorResult.PASS &&
+                                                       _.TlsEvaluatedResult.Description?.Length > 0)
+                    .Select(_ => _.TlsEvaluatedResult.Description).ToList();
                 List<string> warnings = records.Where(_ => _.TlsEvaluatedResult.Result == EvaluatorResult.WARNING)
                     .Select(_ => _.TlsEvaluatedResult.Description).ToList();
                 List<string> failures = records.Where(_ => _.TlsEvaluatedResult.Result == EvaluatorResult.FAIL)
@@ -72,10 +75,12 @@ namespace MailCheck.Mx.Api
                         mxState.LastUpdated ?? DateTime.MinValue,
                         warnings,
                         failures,
-                        informational));
+                        informational,
+                        positives));
 
                 mxTlsCertificateEvaluatorResults.Add(CreateMxTlsCertificateEvaluatorResults(hostMxRecord.Id,
-                    hostMxRecord.Preference ?? 0, mxState.LastUpdated ?? DateTime.MinValue, tlsEntityState.CertificateResults));
+                    hostMxRecord.Preference ?? 0, mxState.LastUpdated ?? DateTime.MinValue,
+                    tlsEntityState.CertificateResults));
             }
 
             return new DomainTlsEvaluatorResults(mxState.Id, mxState.MxState == MxState.PollPending,

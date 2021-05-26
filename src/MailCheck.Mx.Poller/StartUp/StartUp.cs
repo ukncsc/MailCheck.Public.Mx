@@ -50,12 +50,16 @@ namespace MailCheck.Mx.Poller.StartUp
                 {
                     Timeout = provider.GetRequiredService<IMxPollerConfig>().DnsRecordLookupTimeout
                 }
-                : new LookupClient(provider.GetService<IDnsNameServerProvider>().GetNameServers()
+                : new LookupClient(new LookupClientOptions(
+                    provider.GetService<IDnsNameServerProvider>().GetNameServers()
                     .Select(_ => new IPEndPoint(_, 53)).ToArray())
                 {
-                    Timeout = provider.GetRequiredService<IMxPollerConfig>().DnsRecordLookupTimeout,
+                    ContinueOnEmptyResponse = false,
+                    UseCache = false,
                     UseTcpOnly = true,
-                };
+                    EnableAuditTrail = true,
+                    Timeout = provider.GetRequiredService<IMxPollerConfig>().DnsRecordLookupTimeout,
+                });
         }
     }
 }

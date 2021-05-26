@@ -85,30 +85,30 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls12
                 case CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:
                 case CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA:
                 case CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId3, EvaluatorResult.WARNING,
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId3, EvaluatorResult.INFORMATIONAL,
                         $"{introWithCipherSuite} which uses SHA-1. {advice}").ToTaskList();
 
                 case CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384:
                 case CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256:
                 case CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256:
                 case CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId4, EvaluatorResult.WARNING,
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId4, EvaluatorResult.INFORMATIONAL,
                         $"{introWithCipherSuite} which has no Perfect Forward Secrecy (PFS). {advice}").ToTaskList();
 
                 case CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA:
                 case CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId5, EvaluatorResult.WARNING,
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId5, EvaluatorResult.INFORMATIONAL,
                             $"{introWithCipherSuite} which has no Perfect Forward Secrecy (PFS) and uses SHA-1. {advice}")
                         .ToTaskList();
 
                 case CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA:
                 case CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId6, EvaluatorResult.WARNING,
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId6, EvaluatorResult.INFORMATIONAL,
                             $"{introWithCipherSuite} which has no Perfect Forward Secrecy (PFS) and uses 3DES and SHA-1. {advice}")
                         .ToTaskList();
 
                 case CipherSuite.TLS_RSA_WITH_RC4_128_SHA:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId7, EvaluatorResult.WARNING,
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId7, EvaluatorResult.INFORMATIONAL,
                             $"{introWithCipherSuite} which has no Perfect Forward Secrecy (PFS) and uses RC4 and SHA-1. {advice}")
                         .ToTaskList();
 

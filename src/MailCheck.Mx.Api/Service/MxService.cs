@@ -39,7 +39,7 @@ namespace MailCheck.Mx.Api.Service
 
             if (mxState == null)
             {
-                _log.LogInformation($"Domain {domain} not found - publishing DomainMissing");
+                _log.LogInformation($"Mx entity state does not exist for domain {domain} - publishing DomainMissing");
                 await _messagePublisher.Publish(new DomainMissing(domain), _config.MicroserviceOutputSnsTopicArn);
                 return null;
             }

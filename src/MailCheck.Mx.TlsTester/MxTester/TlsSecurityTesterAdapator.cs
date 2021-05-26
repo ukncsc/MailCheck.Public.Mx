@@ -13,6 +13,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
     public interface ITlsSecurityTesterAdapator
     {
         Task<TlsTestResults> Test(TlsTestPending tlsTest);
+        Task<TlsTestResults> Test(TlsTestPending tlsTest, int[] testIds);
     }
 
     public class TlsSecurityTesterAdapator : ITlsSecurityTesterAdapator
@@ -24,7 +25,12 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _tlsSecurityTester = tlsSecurityTester;
         }
 
-        public async Task<TlsTestResults> Test(TlsTestPending tlsTest)
+        public Task<TlsTestResults> Test(TlsTestPending tlsTest)
+        {
+            return Test(tlsTest, null);
+        }
+
+        public async Task<TlsTestResults> Test(TlsTestPending tlsTest, int[] testIds)
         {
             List<TlsTestResult> results = new List<TlsTestResult>();
 
@@ -32,7 +38,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
             if (!string.IsNullOrWhiteSpace(tlsTest.Id) && tlsTest.Id.Trim() != ".")
             {
-                results = await _tlsSecurityTester.Test(tlsTest.Id);
+                results = await _tlsSecurityTester.Test(tlsTest.Id, testIds);
 
                 certificates = results.FirstOrDefault(_ => _.Result.Certificates.Any())?
                                    .Result.Certificates.ToList() ?? new List<X509Certificate2>();

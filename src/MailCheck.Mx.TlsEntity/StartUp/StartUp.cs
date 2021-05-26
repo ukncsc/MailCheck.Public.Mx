@@ -16,7 +16,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using System.Collections.Generic;
+using MailCheck.Common.Environment.FeatureManagement;
 using MailCheck.Mx.Contracts.SharedDomain;
+using MailCheck.Common.Messaging.Sns;
+using MailCheck.Mx.TlsEntity.Entity;
+using MailCheck.Mx.TlsEntity.Entity.EmailSecurity;
 
 namespace MailCheck.Mx.TlsEntity.StartUp
 {
@@ -39,7 +43,6 @@ namespace MailCheck.Mx.TlsEntity.StartUp
 
             services
                 .AddTransient<IClock, Clock>()
-                .AddTransient<IEqualityComparer<TlsEvaluatedResult>, MessageEqualityComparer>()
                 .AddTransient<IChangeNotifier, AdvisoryChangedNotifier>()
                 .AddTransient<IChangeNotifiersComposite, ChangeNotifiersComposite>()
                 .AddTransient<IConnectionInfoAsync, MySqlEnvironmentParameterStoreConnectionInfoAsync>()
@@ -47,11 +50,22 @@ namespace MailCheck.Mx.TlsEntity.StartUp
                 .AddTransient<IEnvironmentVariables, EnvironmentVariables>()
                 .AddSingleton<IAmazonSimpleSystemsManagement, CachingAmazonSimpleSystemsManagementClient>()
                 .AddTransient<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>()
+                .AddTransient<IMessagePublisher, SnsMessagePublisher>()
                 .AddTransient<ITlsEntityDao, TlsEntityDao>()
                 .AddTransient<ITlsEntityConfig, TlsEntityConfig>()
                 .AddTransient<IDomainStatusPublisher, DomainStatusPublisher>()
                 .AddTransient<IDomainStatusEvaluator, DomainStatusEvaluator>()
-                .AddTransient<Entity.TlsEntity>();
+                .AddTransient<IEntityChangedPublisher, EntityChangedPublisher>()
+                .AddConditionally(
+                    "NewScheduler",
+                    featureActiveRegistrations =>
+                    {
+                        featureActiveRegistrations.AddTransient<TlsEntityNewScheduler>();
+                    },
+                    featureInactiveRegistrations =>
+                    {
+                        featureInactiveRegistrations.AddTransient<Entity.TlsEntity>();
+                    });
         }
     }
 }

@@ -47,7 +47,6 @@ namespace MailCheck.Mx.BouncyCastle.Mapping
 
             {AdditionalGroups.Java1024, CurveGroup.Java1024},
             {DHStandardGroups.rfc2409_1024, CurveGroup.Rfc2409_1024},
-            {DHStandardGroups.rfc5114_1024_160, CurveGroup.Rfc5114_1024},
             {DHStandardGroups.rfc7919_ffdhe2048, CurveGroup.Ffdhe2048},
             {DHStandardGroups.rfc7919_ffdhe3072, CurveGroup.Ffdhe3072},
             {DHStandardGroups.rfc7919_ffdhe4096, CurveGroup.Ffdhe4096},
@@ -73,6 +72,8 @@ namespace MailCheck.Mx.BouncyCastle.Mapping
             {
                 case 1024:
                     return CurveGroup.UnknownGroup1024;
+                case 1536:
+                    return CurveGroup.UnknownGroup1536;
                 case 2048:
                     return CurveGroup.UnknownGroup2048;
                 case 3072:

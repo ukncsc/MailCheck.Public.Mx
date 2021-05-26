@@ -6,8 +6,8 @@ namespace MailCheck.Mx.BouncyCastle.KeyExchange
 {
     internal class TestTlsDhKeyExchange : TlsDHKeyExchange
     {
-        public TestTlsDhKeyExchange(int keyExchange, IList supportedSignatureAlgorithms, DHParameters dhParameters) 
-            : base(keyExchange, supportedSignatureAlgorithms, dhParameters)
+        public TestTlsDhKeyExchange(int keyExchange, IList supportedSignatureAlgorithms, TlsDHVerifier tlsDHVerifier, DHParameters dhParameters) 
+            : base(keyExchange, supportedSignatureAlgorithms, tlsDHVerifier, dhParameters)
         {
         }
 

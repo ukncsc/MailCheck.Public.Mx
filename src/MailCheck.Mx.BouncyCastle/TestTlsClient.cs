@@ -74,12 +74,12 @@ namespace MailCheck.Mx.BouncyCastle
 
         protected override TlsKeyExchange CreateDheKeyExchange(int keyExchange)
         {
-            return new TestTlsDheKeyExchange(keyExchange, mSupportedSignatureAlgorithms, null);
+            return new TestTlsDheKeyExchange(keyExchange, mSupportedSignatureAlgorithms, new TestTlsDHVerifier(), null);
         }
 
         protected override TlsKeyExchange CreateDHKeyExchange(int keyExchange)
         {
-            return new TestTlsDhKeyExchange(keyExchange, mSupportedSignatureAlgorithms, null);
+            return new TestTlsDhKeyExchange(keyExchange, mSupportedSignatureAlgorithms, new TestTlsDHVerifier(), null);
         }
 
         protected override TlsKeyExchange CreateECDheKeyExchange(int keyExchange)

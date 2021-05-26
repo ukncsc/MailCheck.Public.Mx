@@ -10,6 +10,7 @@ using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.Mx.Contracts.Tester;
 using MailCheck.Mx.TlsTester.Config;
 using MailCheck.Mx.TlsTester.Domain;
+using MailCheck.Mx.TlsTester.Util;
 using Microsoft.Extensions.Logging;
 
 namespace MailCheck.Mx.TlsTester.MxTester
@@ -22,18 +23,19 @@ namespace MailCheck.Mx.TlsTester.MxTester
     public class MxSecurityTesterProcessor : IMxSecurityTesterProcessor
     {
         private const string TlsHostLogPropertyName = "TlsHost";
-
+        
         private readonly IMxQueueProcessor _mxQueueProcessor;
         private readonly IMessagePublisher _publisher;
         private readonly ITlsSecurityTesterAdapator _mxHostTester;
         private readonly IMxSecurityProcessingFilter _processingFilter;
         private readonly IRecentlyProcessedLedger _recentlyProcessedLedger;
+        private readonly IHostClassifier _hostClassifier;
         private readonly IMxTesterConfig _config;
         private readonly ILogger<MxSecurityTesterProcessor> _log;
         private readonly TimeSpan PublishBatchFlushInterval;
         private readonly TimeSpan PrintStatsInterval;
         private readonly Func<ITargetBlock<object>, CancellationToken, Task> RunPipeline;
-
+        
         public MxSecurityTesterProcessor(
             IMxQueueProcessor mxQueueProcessor,
             IMessagePublisher publisher,
@@ -41,13 +43,16 @@ namespace MailCheck.Mx.TlsTester.MxTester
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
             IRecentlyProcessedLedger recentlyProcessedLedger,
-            ILogger<MxSecurityTesterProcessor> log) : this(
+            IHostClassifier hostClassifier,
+            ILogger<MxSecurityTesterProcessor> log
+        ) : this(
             mxQueueProcessor,
             publisher,
             mxHostTester,
             config,
             processingFilter,
             recentlyProcessedLedger,
+            hostClassifier,
             log,
             null)
         { }
@@ -59,6 +64,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
             IRecentlyProcessedLedger recentlyProcessedLedger,
+            IHostClassifier hostClassifier,
             ILogger<MxSecurityTesterProcessor> log,
             Func<ITargetBlock<object>, CancellationToken, Task> runPipeline)
         {
@@ -69,8 +75,10 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _log = log;
             _recentlyProcessedLedger = recentlyProcessedLedger;
             _processingFilter = processingFilter;
+            _hostClassifier = hostClassifier;
             PublishBatchFlushInterval = TimeSpan.FromSeconds(_config.PublishBatchFlushIntervalSeconds);
             PrintStatsInterval = TimeSpan.FromSeconds(_config.PrintStatsIntervalSeconds);
+            
             RunPipeline = runPipeline ?? DefaultRunPipeline;
         }
 
@@ -79,13 +87,13 @@ namespace MailCheck.Mx.TlsTester.MxTester
             DataflowLinkOptions linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
             DataflowLinkOptions nonPropagatingLinkOptions = new DataflowLinkOptions();
             ExecutionDataflowBlockOptions singleItemBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1, EnsureOrdered = false };
-            ExecutionDataflowBlockOptions bufferBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 100, EnsureOrdered = false };
+            ExecutionDataflowBlockOptions bufferBlockOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = _config.BufferSize, EnsureOrdered = false };
             ExecutionDataflowBlockOptions unboundedBlockOptions = new ExecutionDataflowBlockOptions { EnsureOrdered = false };
             GroupingDataflowBlockOptions batchingBlockOptions = new GroupingDataflowBlockOptions { EnsureOrdered = false };
 
             TransformManyBlock<object, MxHostTestDetails> queuePoller =
                 new TransformManyBlock<object, MxHostTestDetails>(_ => GetMxHostToProcess(_), singleItemBlockOptions);
-
+            
             TransformBlock<MxHostTestDetails, MxHostTestDetails> retestPeriodFilter =
                 new TransformBlock<MxHostTestDetails, MxHostTestDetails>((Func<MxHostTestDetails, MxHostTestDetails>)MarkTestToSkip, singleItemBlockOptions);
 
@@ -94,7 +102,21 @@ namespace MailCheck.Mx.TlsTester.MxTester
             TransformManyBlock<MxHostTestDetails, MxHostTestDetails> duplicateFilter =
                 new TransformManyBlock<MxHostTestDetails, MxHostTestDetails>(_ => FilterHosts(_), singleItemBlockOptions);
 
-            List<TransformBlock<MxHostTestDetails, MxHostTestDetails>> mxTestProcessors = Enumerable
+            List<TransformBlock<MxHostTestDetails, MxHostTestDetails>> classifiers = Enumerable
+                .Range(1, _config.TlsTesterThreadCount)
+                .Select(index => new TransformBlock<MxHostTestDetails, MxHostTestDetails>(CreateTlsClassifier(Guid.NewGuid()), singleItemBlockOptions))
+                .ToList();
+
+            OverflowingBufferBlock<MxHostTestDetails> slowLaneBuffer = new OverflowingBufferBlock<MxHostTestDetails>(_config.BufferSize);
+            
+            BufferBlock<MxHostTestDetails> fastLaneBuffer = new BufferBlock<MxHostTestDetails>(bufferBlockOptions);
+
+            List<TransformBlock<MxHostTestDetails, MxHostTestDetails>> fastLaneProcessors = Enumerable
+                .Range(1, _config.TlsTesterThreadCount)
+                .Select(index => new TransformBlock<MxHostTestDetails, MxHostTestDetails>(CreateTlsTester(Guid.NewGuid()), singleItemBlockOptions))
+                .ToList();
+
+            List<TransformBlock<MxHostTestDetails, MxHostTestDetails>> slowLaneProcessors = Enumerable
                 .Range(1, _config.TlsTesterThreadCount)
                 .Select(index => new TransformBlock<MxHostTestDetails, MxHostTestDetails>(CreateTlsTester(Guid.NewGuid()), singleItemBlockOptions))
                 .ToList();
@@ -123,24 +145,39 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
             buffer.LinkTo(duplicateFilter, linkOptions);
 
-            mxTestProcessors.ForEach(processor => {
+            classifiers.ForEach(processor => {
                 duplicateFilter.LinkTo(processor, linkOptions);
+                processor.LinkTo(slowLaneBuffer.Target, nonPropagatingLinkOptions, item => item.Classification == Classifications.Slow);
+                processor.LinkTo(fastLaneBuffer, nonPropagatingLinkOptions, item => item.Classification == Classifications.Fast);
+                processor.LinkTo(batchFlusher, nonPropagatingLinkOptions, item => item.Classification == Classifications.Unknown);
+            });
+
+            slowLaneProcessors.ForEach(processor => {
+                slowLaneBuffer.Source.LinkTo(processor, linkOptions);
                 processor.LinkTo(batchFlusher, nonPropagatingLinkOptions);
             });
+
+            fastLaneProcessors.ForEach(processor => {
+                fastLaneBuffer.LinkTo(processor, linkOptions);
+                processor.LinkTo(batchFlusher, nonPropagatingLinkOptions);
+            });
+
+            slowLaneBuffer.Overflow.LinkTo(batchFlusher, nonPropagatingLinkOptions);
 
             batchFlusher.LinkTo(resultBatcher, linkOptions);
             resultBatcher.LinkTo(resultPublisher, linkOptions);
             resultPublisher.LinkTo(deleteFromQueue, linkOptions);
 
-            var blocks = new Dictionary<string, Func<int>> {
+            Dictionary<string, Func<int>> diagnosticStatsMetrics = new Dictionary<string, Func<int>> {
                 ["Queued"] = () => queuePoller.OutputCount + buffer.Count,
                 ["Processing"] = () => _processingFilter.HostCount,
             };
 
-            var processorTasks = mxTestProcessors.Select(processor => processor.Completion).ToArray();
+            Task[] classifierTasks = classifiers.Select(processor => processor.Completion).ToArray();
+            Task[] fastLaneTasks = fastLaneProcessors.Select(processor => processor.Completion).ToArray();
 
             // Start the stats print loop
-            var statsTask = PrintStats(blocks, cancellationToken);
+            Task statsTask = PrintStats(diagnosticStatsMetrics, cancellationToken);
 
             await RunPipeline(queuePoller, cancellationToken);
 
@@ -148,9 +185,14 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
             queuePoller.Complete();
 
-            _log.LogInformation("Waiting for test processors to complete...");
+            _log.LogInformation("Waiting for classifiers to complete...");
+            await Task.WhenAll(classifierTasks);
 
-            await Task.WhenAll(processorTasks);
+            slowLaneBuffer.Target.Complete();
+            fastLaneBuffer.Complete();
+
+            _log.LogInformation("Waiting for fast lane processors to complete...");
+            await Task.WhenAll(fastLaneTasks);
 
             _log.LogInformation("Test processors complete. Flushing results...");
 
@@ -170,11 +212,11 @@ namespace MailCheck.Mx.TlsTester.MxTester
         {
             foreach (MxHostTestDetails tlsTestResult in messages)
             {
-                var test = tlsTestResult.Test;
-                var hostname = test.Id;
-                var normalizedHostname = tlsTestResult.NormalizedHostname;
-                var messageId = test.MessageId;
-                var receiptHandle = test.ReceiptHandle;
+                TlsTestPending test = tlsTestResult.Test;
+                string hostname = test.Id;
+                string normalizedHostname = tlsTestResult.NormalizedHostname;
+                string messageId = test.MessageId;
+                string receiptHandle = test.ReceiptHandle;
 
                 using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = hostname }))
                 {
@@ -216,7 +258,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             {
                 _log.LogDebug("Getting mx hosts to process.");
 
-                var testsPending = await _mxQueueProcessor.GetMxHosts();
+                List<TlsTestPending> testsPending = await _mxQueueProcessor.GetMxHosts();
 
                 hosts.AddRange(testsPending.Select(tp => new MxHostTestDetails(tp) { NormalizedHostname = tp.Id.Trim().TrimEnd('.').ToLowerInvariant() }));
 
@@ -245,7 +287,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
         private IEnumerable<MxHostTestDetails> FilterHosts(MxHostTestDetails host)
         {
-            var hostname = host.Test.Id;
+            string hostname = host.Test.Id;
             using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = hostname }))
             {
                 if (_processingFilter.Reserve(hostname))
@@ -255,18 +297,43 @@ namespace MailCheck.Mx.TlsTester.MxTester
             }
         }
 
-        private Func<MxHostTestDetails, Task<MxHostTestDetails>> CreateTlsTester(Guid testerId)
+        private Func<MxHostTestDetails, Task<MxHostTestDetails>> CreateTlsClassifier(Guid testerId)
         {
             return async testDetails =>
             {
-                var tlsTest = testDetails.Test;
+                TlsTestPending tlsTest = testDetails.Test;
 
                 using (_log.BeginScope(new Dictionary<string, object> { ["TlsTesterId"] = testerId, [TlsHostLogPropertyName] = tlsTest.Id }))
                 {
                     try
                     {
-                        var stopwatch = Stopwatch.StartNew();
+                        ClassificationResult classification = await _hostClassifier.Classify(tlsTest);
+
+                        testDetails.Classification = classification.Classification;
+                    }
+                    catch (Exception e)
+                    {
+                        _log.LogError(e, $"Error occurred during canary test run");
+                    }
+
+                    return testDetails;
+                }
+            };
+        }
+
+        private Func<MxHostTestDetails, Task<MxHostTestDetails>> CreateTlsTester(Guid testerId)
+        {
+            return async testDetails =>
+            {
+                TlsTestPending tlsTest = testDetails.Test;
+
+                using (_log.BeginScope(new Dictionary<string, object> { ["TlsTesterId"] = testerId, [TlsHostLogPropertyName] = tlsTest.Id }))
+                {
+                    try
+                    {
+                        Stopwatch stopwatch = Stopwatch.StartNew();
                         _log.LogInformation($"Starting TLS test run");
+
                         testDetails.TestResults = await _mxHostTester.Test(tlsTest);
                         _log.LogInformation($"Completed TLS test run, time taken : {stopwatch.ElapsedMilliseconds}ms");
                     }
@@ -284,7 +351,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
         {
             foreach (MxHostTestDetails tlsTestResult in tlsTestResults)
             {
-                var hostname = tlsTestResult.Test.Id;
+                string hostname = tlsTestResult.Test.Id;
 
                 using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = hostname }))
                 {
@@ -328,7 +395,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             };
         }
 
-        private async Task PrintStats(Dictionary<string, Func<int>> blocks, CancellationToken cancellationToken)
+        private async Task PrintStats(Dictionary<string, Func<int>> metricsFuncs, CancellationToken cancellationToken)
         {
             if (PrintStatsInterval == TimeSpan.Zero) return;
 
@@ -336,14 +403,14 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                _log.LogInformation($"TLS Tester stats: {string.Join(", ", blocks.Select(x => $"{x.Key}: {x.Value()}"))}");
+                _log.LogInformation($"TLS Tester stats: {string.Join(", ", metricsFuncs.Select(x => $"{x.Key}: {x.Value()}"))}");
 
                 Task delay = Task.Delay(PrintStatsInterval);
                 await Task.WhenAny(delay, cancelled);
             }
         }
 
-        private async Task DefaultRunPipeline(ITargetBlock<object> inputQueue, CancellationToken cancellationToken)
+        private static async Task DefaultRunPipeline(ITargetBlock<object> inputQueue, CancellationToken cancellationToken)
         {
             Task cancelled = cancellationToken.WhenCanceled();
 

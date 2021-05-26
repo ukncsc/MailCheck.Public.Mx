@@ -13,9 +13,9 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.5.0" />
     <PackageReference Include="Flurl.Http" Version="2.4.1" />
-    <PackageReference Include="MailCheck.Common.Messaging" Version="4.0.0" />
-    <PackageReference Include="MailCheck.Common.Util" Version="4.0.0" />
-    <PackageReference Include="MailCheck.Common.SSM" Version="4.0.0" />
+    <PackageReference Include="MailCheck.Common.Messaging" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.Util" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.SSM" Version="5.1.0" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
     <PackageReference Include="CsvHelper" Version="12.1.2" />

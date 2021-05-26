@@ -209,7 +209,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls12
         [TestCase(CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA)]
         [TestCase(CipherSuite.TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA)]
         [TestCase(CipherSuite.TLS_RSA_WITH_RC4_128_SHA)]
-        public async Task PreviousCipherSuiteIsDifferentAndCurrentIsWarningShouldResultInWarning(CipherSuite cipherSuite)
+        public async Task PreviousCipherSuiteIsDifferentAndCurrentIsWarningShouldResultInInformationalMessage(CipherSuite cipherSuite)
         {
             Dictionary<TlsTestType, BouncyCastleTlsTestResult> data = new Dictionary<TlsTestType, BouncyCastleTlsTestResult>
             {
@@ -227,7 +227,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls12
 
             List<RuleTypedTlsEvaluationResult> evaluatorResults = await _sut.Evaluate(connectionTestResults);
 
-            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.WARNING);
+            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.INFORMATIONAL);
         }
 
         [Test]

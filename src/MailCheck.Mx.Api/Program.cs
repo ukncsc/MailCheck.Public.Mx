@@ -22,7 +22,7 @@ namespace MailCheck.Mx.Api
 
             if (RunInDevMode())
             {
-                webHostBuilder.UseUrls("http://localhost:5010");
+                webHostBuilder.UseUrls("http://+:5010");
             }
 
             return webHostBuilder;

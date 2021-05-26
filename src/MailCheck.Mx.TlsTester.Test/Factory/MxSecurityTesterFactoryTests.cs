@@ -14,6 +14,12 @@ namespace MailCheck.Mx.TlsTester.Test.Factory
             System.Environment.SetEnvironmentVariable("RefreshIntervalSeconds", "1");
             System.Environment.SetEnvironmentVariable("FailureRefreshIntervalSeconds", "1");
             System.Environment.SetEnvironmentVariable("TlsTestTimeoutSeconds", "1");
+            System.Environment.SetEnvironmentVariable("BufferSize", "100");
+            System.Environment.SetEnvironmentVariable("SlowResponseThresholdSeconds", "10");
+            System.Environment.SetEnvironmentVariable("PrintStatsIntervalSeconds", "30");
+            System.Environment.SetEnvironmentVariable("PublishBatchFlushIntervalSeconds", "10");
+            System.Environment.SetEnvironmentVariable("PublishBatchSize", "10");
+            System.Environment.SetEnvironmentVariable("TlsTesterThreadCount", "10");
             System.Environment.SetEnvironmentVariable("SmtpHostName", "localhost");
             System.Environment.SetEnvironmentVariable("CacheHostName", "localhost");
             System.Environment.SetEnvironmentVariable("SnsTopicArn", "localhost");

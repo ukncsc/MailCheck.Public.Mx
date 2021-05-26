@@ -7,7 +7,6 @@ using DnsClient.Protocol;
 using MailCheck.Common.Util;
 using MailCheck.Mx.Contracts.Poller;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace MailCheck.Mx.Poller.Dns
 {
@@ -29,20 +28,14 @@ namespace MailCheck.Mx.Poller.Dns
 
         public async Task<DnsResult<List<HostMxRecord>>> GetMxRecords(string domain)
         {
-            _log.LogInformation($"Querying mx records for {domain}");
-
             IDnsQueryResponse response = await _lookupClient.QueryAsync(domain, QueryType.MX);
 
             if (response.HasError)
             {
-                _log.LogInformation($"Error occured quering mx records for {domain}, error: {response.ErrorMessage}");
-                return new DnsResult<List<HostMxRecord>>(response.ErrorMessage);
+                return new DnsResult<List<HostMxRecord>>(response.ErrorMessage, response.AuditTrail);
             }
 
             List<HostMxRecord> records = await GetRecords(domain, response);
-
-            _log.LogInformation($"MX records for {domain}, results: {JsonConvert.SerializeObject(records)}");
-
 
             return new DnsResult<List<HostMxRecord>>(records, response.MessageSize);
         }
@@ -53,11 +46,15 @@ namespace MailCheck.Mx.Poller.Dns
 
             IDnsQueryResponse response = await _lookupClient.QueryAsync(host, QueryType.A);
 
-            if (!response.HasError)
+            if (response.HasError)
+            {
+                _log.LogWarning($"DNS A record lookup for host {host} (from MX for domain {domain}) failed with error {response.ErrorMessage}{Environment.NewLine}{response.AuditTrail}");
+            }
+            else
             {
                 ipAddresses.AddRange(response.Answers
                     .OfType<ARecord>()
-                    .Select(_ => _.Address.ToString().Escape())
+                    .Select(aRecord => aRecord.Address.ToString().Escape())
                     .ToList());
             }
 
@@ -66,16 +63,18 @@ namespace MailCheck.Mx.Poller.Dns
 
         private async Task<List<HostMxRecord>> GetRecords(string domain, IDnsQueryResponse response)
         {
-            List<Task<HostMxRecord>> records = response.Answers.OfType<MxRecord>()
-                .Select(async _ => new HostMxRecord(_.Exchange.Value.Escape(), _.Preference,
-                    await GetARecords(domain, _.Exchange.Value.Escape())))
+            List<Task<HostMxRecord>> records = response.Answers
+                .OfType<MxRecord>()
+                .Select(async mxRecord => {
+                    string mxEntry = mxRecord.Exchange.Value.Escape();
+
+                    List<string> aRecords = await GetARecords(domain, mxEntry);
+
+                    return new HostMxRecord(mxEntry, mxRecord.Preference, aRecords);
+                })
                 .ToList();
 
-            await Task.WhenAll(records);
-
-            return records.Any()
-                ? records.Select(x => x.Result).ToList()
-                : new List<HostMxRecord>();
+            return (await Task.WhenAll(records)).ToList();
         }
     }
 }

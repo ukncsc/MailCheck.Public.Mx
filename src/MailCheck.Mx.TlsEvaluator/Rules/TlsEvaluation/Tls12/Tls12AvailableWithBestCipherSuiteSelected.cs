@@ -41,7 +41,8 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls12
                 case CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:
                 case CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384:
                 case CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS)
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS, 
+                            "TLS 1.2 is available and a secure cipher suite was selected.")
                         .ToTaskList();
 
                 case CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA:

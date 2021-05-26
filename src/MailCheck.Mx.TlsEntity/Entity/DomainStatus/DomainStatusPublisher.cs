@@ -59,7 +59,7 @@ namespace MailCheck.Mx.TlsEntity.Entity.DomainStatus
 
                 Status status = _domainStatusEvaluator.GetStatus(existingResults, existingCertificates);
 
-                DomainStatusEvaluation domainStatusEvaluation = new DomainStatusEvaluation(domain, "TLS", status);
+                DomainStatusEvaluation domainStatusEvaluation = new DomainStatusEvaluation(domain, _tlsEntityConfig.RecordType, status);
 
                 _log.LogInformation(
                     $"Publishing TLS domain status for domain {domain} because it contains mx host {message.Id} which was evaluated");

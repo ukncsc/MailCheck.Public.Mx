@@ -12,9 +12,9 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.5.0" />
-    <PackageReference Include="DnsClient" Version="1.2.0" />
-    <PackageReference Include="MailCheck.Common.Messaging" Version="4.0.0" />
-    <PackageReference Include="MailCheck.Common.util" Version="4.0.0" />
+    <PackageReference Include="DnsClient" Version="1.3.2" />
+    <PackageReference Include="MailCheck.Common.Messaging" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.util" Version="5.1.0" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>

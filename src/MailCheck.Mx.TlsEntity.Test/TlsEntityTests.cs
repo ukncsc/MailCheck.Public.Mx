@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Amazon.XRay.Recorder.Core.Internal.Utils;
 using FakeItEasy;
 using MailCheck.Common.Contracts.Messaging;
 using MailCheck.Common.Messaging.Abstractions;
@@ -15,6 +16,7 @@ using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Dao;
 using MailCheck.Mx.TlsEntity.Entity;
 using MailCheck.Mx.TlsEntity.Entity.DomainStatus;
+using MailCheck.Mx.TlsEntity.Entity.EmailSecurity;
 using MailCheck.Mx.TlsEntity.Entity.Notifiers;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
@@ -29,6 +31,7 @@ namespace MailCheck.Mx.TlsEntity.Test
         private ITlsEntityConfig _tlsEntityConfig;
         private IMessageDispatcher _dispatcher;
         private IDomainStatusPublisher _domainStatusPublisher;
+        private IEntityChangedPublisher _entityChangedPublisher;
         private IClock _clock;
         private ILogger<TlsEntity.Entity.TlsEntity> _log;
         private IChangeNotifiersComposite _changeNotifierComposite;
@@ -42,9 +45,11 @@ namespace MailCheck.Mx.TlsEntity.Test
             _tlsEntityConfig = A.Fake<ITlsEntityConfig>();
             _dispatcher = A.Fake<IMessageDispatcher>();
             _domainStatusPublisher = A.Fake<IDomainStatusPublisher>();
+            _entityChangedPublisher = A.Fake<IEntityChangedPublisher>();
             _changeNotifierComposite = A.Fake<IChangeNotifiersComposite>();
 
-            _tlsEntity = new TlsEntity.Entity.TlsEntity(_dao, _clock, _tlsEntityConfig, _dispatcher, _domainStatusPublisher, _changeNotifierComposite, _log);
+            _tlsEntity = new TlsEntity.Entity.TlsEntity(_dao, _clock, _tlsEntityConfig, _dispatcher, _domainStatusPublisher,
+                _entityChangedPublisher, _changeNotifierComposite, _log);
         }
         
         [Test]
@@ -185,7 +190,7 @@ namespace MailCheck.Mx.TlsEntity.Test
             A.CallTo(() => _changeNotifierComposite.Handle(stateFromDb, message, A<List<string>>._)).MustNotHaveHappened();
             A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<TlsRecordEvaluationsChanged>.That.Matches(a => a.Id == message.Id && a.TlsRecords == message.TlsRecords && a.CertificateResults == message.Certificates), snsTopicArn, null)).MustNotHaveHappened();
-            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == hostName && a.Service == "Tls" && a.ScheduledTime.Second == 15), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == hostName && a.Service == "Tls"), snsTopicArn)).MustHaveHappenedOnceExactly();
         }
 
         [Test]
@@ -232,9 +237,10 @@ namespace MailCheck.Mx.TlsEntity.Test
             Assert.AreEqual(stateFromDb.LastUpdated, message.Timestamp);
             List<string> domains = new List<string>();
             A.CallTo(() => _changeNotifierComposite.Handle(stateFromDb, message, A<List<string>>._)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _entityChangedPublisher.Publish(A<string>._, A<TlsEntityState>._,"TlsResultsEvaluated")).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<TlsRecordEvaluationsChanged>.That.Matches(a => a.Id == message.Id && a.TlsRecords == message.TlsRecords && a.CertificateResults == message.Certificates), snsTopicArn)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == hostName && a.Service == "Tls" && a.ScheduledTime.Second == 33), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == hostName && a.Service == "Tls"), snsTopicArn)).MustHaveHappenedOnceExactly();
         }
 
         [Test]

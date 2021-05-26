@@ -39,6 +39,7 @@
         Unknown = 0xfe00,
 
         UnknownGroup1024 = 0xfe01,
+        UnknownGroup1536 = 0xfe13,
         UnknownGroup2048 = 0xfe02,
         UnknownGroup3072 = 0xfe03,
         UnknownGroup4096 = 0xfe04,

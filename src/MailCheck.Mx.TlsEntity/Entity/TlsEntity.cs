@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Xml;
 using MailCheck.Common.Contracts.Messaging;
 using MailCheck.Common.Messaging.Abstractions;
-using MailCheck.Common.Messaging.Common.Exception;
 using MailCheck.Common.Util;
 using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Contracts.External;
-using MailCheck.Mx.Contracts.SharedDomain;
 using MailCheck.Mx.Contracts.TlsEntity;
 using MailCheck.Mx.Contracts.TlsEvaluator;
 using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Dao;
 using MailCheck.Mx.TlsEntity.Entity.DomainStatus;
+using MailCheck.Mx.TlsEntity.Entity.EmailSecurity;
 using MailCheck.Mx.TlsEntity.Entity.Notifiers;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace MailCheck.Mx.TlsEntity.Entity
 {
@@ -34,6 +30,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
         private readonly IMessageDispatcher _dispatcher;
         private readonly IDomainStatusPublisher _domainStatusPublisher;
         private readonly IChangeNotifiersComposite _changeNotifiersComposite;
+        private readonly IEntityChangedPublisher _entityChangedPublisher;
         private const string ServiceName = "Tls";
 
         public TlsEntity(ITlsEntityDao dao,
@@ -41,6 +38,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
             ITlsEntityConfig tlsEntityConfig,
             IMessageDispatcher dispatcher,
             IDomainStatusPublisher domainStatusPublisher,
+            IEntityChangedPublisher entityChangedPublisher,
             IChangeNotifiersComposite changeNotifiersComposite,
             ILogger<TlsEntity> log)
         {
@@ -48,6 +46,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
             _clock = clock;
             _log = log;
             _domainStatusPublisher = domainStatusPublisher;
+            _entityChangedPublisher = entityChangedPublisher;
             _tlsEntityConfig = tlsEntityConfig;
             _dispatcher = dispatcher;
             _changeNotifiersComposite = changeNotifiersComposite;
@@ -90,7 +89,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
             TlsEntityState state = await LoadState(messageId, nameof(message));
 
             await _domainStatusPublisher.Publish(message);
-
+            _entityChangedPublisher.Publish(messageId, state, nameof(TlsResultsEvaluated));
             state.TlsState = TlsState.Evaluated;
             state.FailureCount = message.Failed ? state.FailureCount + 1 : 0;
 

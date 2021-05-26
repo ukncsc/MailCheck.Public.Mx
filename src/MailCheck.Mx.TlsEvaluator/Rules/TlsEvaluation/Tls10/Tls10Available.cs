@@ -34,13 +34,8 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls10
                     }
 
                     return new RuleTypedTlsEvaluationResult(tlsTestType, ErrorId2,
-                            tls10Available.ExplicitlyUnsupported() || tls10Available.HandshakeFailure()
-                                ? EvaluatorResult.INFORMATIONAL
-                                : EvaluatorResult.WARNING,
-                            tls10Available.ExplicitlyUnsupported() || tls10Available.HandshakeFailure()
-                                ? "This server refused to negotiate using TLS 1.0"
-                                : string.Format(intro,
-                                    $"the server responded with the error \"{tls10Available.ErrorDescription}\"."))
+                            EvaluatorResult.INFORMATIONAL,
+                            "This server does not support TLS 1.0")
                         .ToTaskList();
                 }
             }

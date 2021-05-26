@@ -72,6 +72,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls12
             Assert.That(evaluatorResults.Count, Is.EqualTo(1));
 
             Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.PASS);
+            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Description, "TLS 1.2 is available and a secure cipher suite was selected.");
         }
 
         [Test]

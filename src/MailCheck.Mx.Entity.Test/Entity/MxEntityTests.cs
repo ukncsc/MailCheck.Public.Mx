@@ -11,12 +11,11 @@ using MailCheck.Mx.Contracts.External;
 using MailCheck.Mx.Contracts.Poller;
 using MailCheck.Mx.Entity.Config;
 using MailCheck.Mx.Entity.Dao;
-using MailCheck.Mx.Entity.Entity;
 using MailCheck.Mx.Entity.Entity.Notifiers;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
-namespace MailCheck.Mx.Entity.Test
+namespace MailCheck.Mx.Entity.Entity
 {
     [TestFixture]
     public class MxEntityTests
@@ -46,12 +45,14 @@ namespace MailCheck.Mx.Entity.Test
         public async Task ShouldThrowWhenDomainCreatedReceivedAndDomainAlreadyExists()
         {
             string domainName = "testDomainName";
+            string snsTopicArn = "SnsTopicArn"; 
 
             A.CallTo(() => _dao.Get(domainName)).Returns(Task.FromResult(new MxEntityState("")));
 
             await _mxEntity.Handle(new DomainCreated(domainName, string.Empty, DateTime.MaxValue));
 
             A.CallTo(() => _dao.Save(A<MxEntityState>.Ignored)).MustNotHaveHappened();
+            A.CallTo(() => _dispatcher.Dispatch(A<EntityChanged>._, snsTopicArn)).MustNotHaveHappened();
         }
 
         [Test]
@@ -69,6 +70,7 @@ namespace MailCheck.Mx.Entity.Test
             A.CallTo(() => _dao.Save(A<MxEntityState>.That.Matches(state => state.MxState == MxState.Created))).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<MxEntityCreated>.That.Matches(entity => entity.Id == domainName.ToLower()), snsTopicArn)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == domainName.ToLower() && a.Service == "Mx" && a.ScheduledTime == DateTime.MinValue), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<EntityChanged>._, snsTopicArn)).MustHaveHappenedOnceExactly();
         }
 
         [Test]
@@ -91,45 +93,6 @@ namespace MailCheck.Mx.Entity.Test
         }
 
         [Test]
-        public void ShouldThrowWhenMxRecordsPolledReceivedButDomainDoesNotExist()
-        {
-            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult((MxEntityState)null));
-
-            Assert.ThrowsAsync<MailCheckException>(async () =>
-            {
-                await _mxEntity.Handle(new MxRecordsPolled("", new List<HostMxRecord>(), null));
-            });
-        }
-
-        [Test]
-        public async Task ShouldHandleChangeSaveAndDispatchWhenMxRecordsPolledReceived()
-        {
-            string snsTopicArn = "SnsTopicArn";
-            A.CallTo(() => _mxEntityConfig.SnsTopicArn).Returns(snsTopicArn);
-
-            string domainName = "testDomainName";
-            MxEntityState stateFromDb = new MxEntityState(domainName.ToLower()) { MxState = MxState.Created };
-            A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
-
-
-            A.CallTo(() => _mxEntityConfig.NextScheduledInSeconds).Returns(33);
-            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.MinValue);
-
-            MxRecordsPolled message = new MxRecordsPolled(domainName, new List<HostMxRecord>(), null) { Timestamp = DateTime.UnixEpoch };
-
-            await _mxEntity.Handle(message);
-
-            Assert.AreEqual(stateFromDb.MxState, MxState.Evaluated);
-            Assert.AreEqual(stateFromDb.HostMxRecords, message.Records);
-            Assert.AreEqual(stateFromDb.LastUpdated, message.Timestamp);
-
-            A.CallTo(() => _changeNotifiersComposite.Handle(stateFromDb, message)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordsUpdated>.That.Matches(a => a.Id == message.Id.ToLower() && a.Records.Count == 0), snsTopicArn)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == domainName.ToLower() && a.Service == "Mx" && a.ScheduledTime.Second == 33), snsTopicArn)).MustHaveHappenedOnceExactly();
-        }
-
-        [Test]
         public async Task ShouldDeleteWhenDomainDeletedReceived()
         {
             string domainName = "testDomainName";
@@ -139,7 +102,8 @@ namespace MailCheck.Mx.Entity.Test
 
             MxEntityState stateFromDb = new MxEntityState(domainName.ToLower())
             {
-                MxState = MxState.Created, HostMxRecords = new List<HostMxRecord>
+                MxState = MxState.Created,
+                HostMxRecords = new List<HostMxRecord>
                 {
                     new HostMxRecord(hostName, 0, new List<string>())
                 }
@@ -160,13 +124,14 @@ namespace MailCheck.Mx.Entity.Test
 
             MxEntityState stateFromDb = new MxEntityState(domainName.ToLower())
             {
-                MxState = MxState.Created, HostMxRecords = new List<HostMxRecord>
+                MxState = MxState.Created,
+                HostMxRecords = new List<HostMxRecord>
                 {
                     new HostMxRecord(hostName, 0, new List<string>())
                 }
             };
 
-            List<string> uniqueHosts = new List<string>{hostName};
+            List<string> uniqueHosts = new List<string> { hostName };
 
             A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
             A.CallTo(() => _dao.GetHostsUniqueToDomain(domainName.ToLower())).Returns(Task.FromResult(uniqueHosts));
@@ -188,7 +153,8 @@ namespace MailCheck.Mx.Entity.Test
 
             MxEntityState stateFromDb = new MxEntityState(domainName.ToLower())
             {
-                MxState = MxState.Created, HostMxRecords = new List<HostMxRecord>
+                MxState = MxState.Created,
+                HostMxRecords = new List<HostMxRecord>
                 {
                     new HostMxRecord(hostName, 0, new List<string>())
                 }
@@ -218,14 +184,15 @@ namespace MailCheck.Mx.Entity.Test
 
             MxEntityState stateFromDb = new MxEntityState(domainName.ToLower())
             {
-                MxState = MxState.Created, HostMxRecords = new List<HostMxRecord>
+                MxState = MxState.Created,
+                HostMxRecords = new List<HostMxRecord>
                 {
                     new HostMxRecord(hostName1, 0, new List<string>()),
                     new HostMxRecord(hostName2, 0, new List<string>())
                 }
             };
 
-            List<string> uniqueHosts = new List<string>{hostName1, hostName2};
+            List<string> uniqueHosts = new List<string> { hostName1, hostName2 };
 
             A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
             A.CallTo(() => _dao.GetHostsUniqueToDomain(domainName.ToLower())).Returns(Task.FromResult(uniqueHosts));
@@ -236,6 +203,57 @@ namespace MailCheck.Mx.Entity.Test
             A.CallTo(() => _dispatcher.Dispatch(A<MxHostDeleted>.That.Matches(a => a.Id == stateFromDb.HostMxRecords[0].Id), A<string>._)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<MxHostDeleted>.That.Matches(a => a.Id == stateFromDb.HostMxRecords[1].Id), A<string>._)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dao.Delete(domainName.ToLower())).MustHaveHappenedOnceExactly();
+        }
+
+        [Test]
+        public void ShouldThrowWhenMxRecordsPolledReceivedButDomainDoesNotExist()
+        {
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult((MxEntityState)null));
+
+            Assert.ThrowsAsync<MailCheckException>(async () =>
+            {
+                await _mxEntity.Handle(new MxRecordsPolled("", new List<HostMxRecord>(), null));
+            });
+        }
+
+        [TestCase(10)]
+        [TestCase(33)]
+        [TestCase(14400)]
+        [TestCase(10800)]
+        [TestCase(1234)]
+        [TestCase(1)]
+        [TestCase(19329)]
+        [TestCase(1000000)]
+        public async Task ShouldHandleChangeSaveAndDispatchWhenMxRecordsPolledReceived(int nextSchedule)
+        {
+            string snsTopicArn = "SnsTopicArn";
+            A.CallTo(() => _mxEntityConfig.SnsTopicArn).Returns(snsTopicArn);
+
+            string domainName = "testDomainName";
+            MxEntityState stateFromDb = new MxEntityState(domainName.ToLower()) { MxState = MxState.Created };
+            A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
+
+
+            A.CallTo(() => _mxEntityConfig.NextScheduledInSeconds).Returns(nextSchedule);
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.MinValue);
+
+            MxRecordsPolled message = new MxRecordsPolled(domainName, new List<HostMxRecord>(), null) { Timestamp = DateTime.UnixEpoch };
+
+            await _mxEntity.Handle(message);
+
+            Assert.AreEqual(stateFromDb.MxState, MxState.Evaluated);
+            Assert.AreEqual(stateFromDb.HostMxRecords, message.Records);
+            Assert.AreEqual(stateFromDb.LastUpdated, message.Timestamp);
+
+            A.CallTo(() => _changeNotifiersComposite.Handle(stateFromDb, message)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordsUpdated>.That.Matches(a => a.Id == message.Id.ToLower() && a.Records.Count == 0), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a =>
+                a.ResourceId == domainName.ToLower() &&
+                a.Service == "Mx" &&
+                a.ScheduledTime <= DateTime.MinValue.AddSeconds(nextSchedule) &&
+                a.ScheduledTime >= DateTime.MinValue.AddSeconds(nextSchedule * 0.75)), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<EntityChanged>._, snsTopicArn)).MustHaveHappenedOnceExactly();
         }
 
         [Test]
@@ -268,7 +286,7 @@ namespace MailCheck.Mx.Entity.Test
             A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.MinValue);
 
             MxRecordsPolled message = new MxRecordsPolled(domainName, hostMxRecords, null) { Timestamp = DateTime.UnixEpoch };
-            List<HostMxRecord> validRecords = new List<HostMxRecord> { new HostMxRecord(hostName2, 0, new List<string>())};
+            List<HostMxRecord> validRecords = new List<HostMxRecord> { new HostMxRecord(hostName2, 0, new List<string>()) };
             await _mxEntity.Handle(message);
 
             Assert.AreEqual(stateFromDb.MxState, MxState.Evaluated);

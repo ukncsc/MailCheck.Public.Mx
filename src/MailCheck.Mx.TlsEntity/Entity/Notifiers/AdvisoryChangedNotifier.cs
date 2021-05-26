@@ -9,133 +9,185 @@ using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Entity.Notifications;
 using Microsoft.Extensions.Logging;
 using Message = MailCheck.Common.Messaging.Abstractions.Message;
+using MessageDisplay = MailCheck.Mx.Contracts.SharedDomain.MessageDisplay;
+using MessageType = MailCheck.Mx.Contracts.SharedDomain.MessageType;
 
 namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
 {
     public class AdvisoryChangedNotifier : IChangeNotifier
     {
-        private readonly IMessageDispatcher _dispatcher;
+        private readonly IMessagePublisher _messagePublisher;
         private readonly ITlsEntityConfig _tlsEntityConfig;
-        private readonly IEqualityComparer<TlsEvaluatedResult> _messageEqualityComparer;
-        private readonly ILogger<AdvisoryChangedNotifier> _logger;
+        private readonly ILogger<AdvisoryChangedNotifier> _log;
 
-        public AdvisoryChangedNotifier(IMessageDispatcher dispatcher, ITlsEntityConfig tlsEntityConfig,
-            IEqualityComparer<TlsEvaluatedResult> messageEqualityComparer, ILogger<AdvisoryChangedNotifier> logger)
+        public AdvisoryChangedNotifier(
+            IMessagePublisher publisher,
+            ITlsEntityConfig tlsEntityConfig,
+            ILogger<AdvisoryChangedNotifier> log)
         {
-            _dispatcher = dispatcher;
+            _messagePublisher = publisher;
             _tlsEntityConfig = tlsEntityConfig;
-            _messageEqualityComparer = messageEqualityComparer;
-            _logger = logger;
+            _log = log;
         }
 
         public void Handle(TlsEntityState state, Message message, List<string> domains)
         {
             if (message is TlsResultsEvaluated evaluationResult)
             {
-                List<TlsEvaluatedResult> currentMessages = GetAdvisoryMessages(state.TlsRecords);
+                string host = state.Id;
 
-                List<TlsEvaluatedResult> newMessages = GetAdvisoryMessages(evaluationResult.TlsRecords);
+                List<AdvisoryMessage> addedConfigAdvisories = new List<AdvisoryMessage>();
 
-                _logger.LogInformation(
-                    $"Evaluation Result messages count: {newMessages.Count}");
+                List<AdvisoryMessage> sustainedConfigAdvisories = new List<AdvisoryMessage>();
 
-                List<TlsEvaluatedResult> addedMessages =
-                    newMessages.Except(currentMessages).ToList();
+                List<AdvisoryMessage> removedConfigAdvisories = new List<AdvisoryMessage>();
 
-                if (addedMessages.Any())
+                List<AdvisoryMessage> addedCertAdvisories = new List<AdvisoryMessage>();
+
+                List<AdvisoryMessage> sustainedCertAdvisories = new List<AdvisoryMessage>();
+
+                List<AdvisoryMessage> removedCertAdvisories = new List<AdvisoryMessage>();
+
+                _log.LogInformation("Getting TLS config advisories.");
+
+                Advisories<TlsEvaluatedResult> configAdvisories = new Advisories<TlsEvaluatedResult>(ExtractMessages(state?.TlsRecords), ExtractMessages(evaluationResult?.TlsRecords));
+
+                addedConfigAdvisories.AddRange(configAdvisories.Added.Select(x => new AdvisoryMessage(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
+
+                sustainedConfigAdvisories.AddRange(configAdvisories.Sustained.Select(x => new AdvisoryMessage(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
+
+                removedConfigAdvisories.AddRange(configAdvisories.Removed.Select(x => new AdvisoryMessage(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
+
+
+                _log.LogInformation("Getting TLS certificate advisories.");
+
+                Advisories<Error> certAdvisories = new Advisories<Error>(
+                    state?.CertificateResults?.Errors,
+                    evaluationResult?.Certificates?.Errors
+                );
+
+                addedCertAdvisories.AddRange(certAdvisories.Added.Select(x => new AdvisoryMessage(GetMessageTypeFromCertError(x), x.Message)).ToList());
+
+                sustainedCertAdvisories.AddRange(certAdvisories.Sustained.Select(x => new AdvisoryMessage(GetMessageTypeFromCertError(x), x.Message)).ToList());
+
+                removedCertAdvisories.AddRange(certAdvisories.Removed.Select(x => new AdvisoryMessage(GetMessageTypeFromCertError(x), x.Message)).ToList());
+
+
+                if (addedConfigAdvisories.Any())
                 {
-                    foreach (string domain in domains)
-                    {
-                        TlsAdvisoryAdded advisoryAdded = new TlsAdvisoryAdded(domain, state.Id,
-                        addedMessages.Select(x => new AdvisoryMessage(GetMessageType(x.Result.Value), x.Description))
-                            .ToList());
-                        _dispatcher.Dispatch(advisoryAdded, _tlsEntityConfig.SnsTopicArn);
-                        _logger.LogInformation(
-                            $"TlsAdvisoryAdded message dispatched to {_tlsEntityConfig.SnsTopicArn} for domain: {domain} and host: {message.Id}");
-                    }
+                    domains.ForEach(x => _messagePublisher.Publish(new TlsAdvisoryAdded(x, host, addedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryAdded messages which contain {addedConfigAdvisories.Count} advisories");
                 }
-                else
+
+                if (sustainedConfigAdvisories.Any())
                 {
-                    _logger.LogInformation($"No new TlsAdvisoryAdded found for host: {message.Id}");
+                    domains.ForEach(x => _messagePublisher.Publish(new TlsAdvisorySustained(x, host, sustainedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    _log.LogInformation($"Dispatched {domains.Count} TlsAdvisorySustained messages which contain {sustainedConfigAdvisories.Count} advisories");
                 }
 
-                List<TlsEvaluatedResult> removedMessages =
-                    currentMessages.Except(newMessages).ToList();
-                if (removedMessages.Any())
+                if (removedConfigAdvisories.Any())
                 {
-                    foreach (string domain in domains)
-                    {
-                        TlsAdvisoryRemoved advisoryRemoved = new TlsAdvisoryRemoved(domain, state.Id,
-                        removedMessages.Select(x => new AdvisoryMessage(GetMessageType(x.Result.Value), x.Description))
-                            .ToList());
-                        _dispatcher.Dispatch(advisoryRemoved, _tlsEntityConfig.SnsTopicArn);
-                        _logger.LogInformation(
-                            $"TlsAdvisoryRemoved message dispatched to {_tlsEntityConfig.SnsTopicArn} for domain: {domain} and host: {message.Id}");
-                    }
+                    domains.ForEach(x => _messagePublisher.Publish(new TlsAdvisoryRemoved(x, host, removedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryRemoved messages which contain {removedConfigAdvisories.Count} advisories");
                 }
-                else
+
+                if (addedCertAdvisories.Any())
                 {
-                    _logger.LogInformation($"No new TlsAdvisoryRemoved found for host: {message.Id}");
+                    domains.ForEach(x => _messagePublisher.Publish(new TlsCertAdvisoryAdded(x, host, addedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryAdded messages which contain {addedCertAdvisories.Count} advisories");
+                }
+
+                if (sustainedCertAdvisories.Any())
+                {
+                    domains.ForEach(x => _messagePublisher.Publish(new TlsCertAdvisorySustained(x, host, sustainedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    _log.LogInformation($"Dispatched {domains.Count} TlsAdvisorySustained messages which contain {sustainedCertAdvisories.Count} advisories");
+                }
+
+                if (removedCertAdvisories.Any())
+                {
+                    domains.ForEach(x => _messagePublisher.Publish(new TlsCertAdvisoryRemoved(x, host, removedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryRemoved messages which contain {removedCertAdvisories.Count} advisories");
                 }
             }
         }
-    
-        private List<TlsEvaluatedResult> GetAdvisoryMessages(TlsRecords tlsRecords)
+
+        private MessageType GetMessageTypeFromCertError(Error x)
         {
-            List<TlsEvaluatedResult> messages = new List<TlsEvaluatedResult>();
-
-            if (tlsRecords != null)
+            switch (x.ErrorType)
             {
-                AddAdvisoryMessage(messages,
-                    tlsRecords.Tls12AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages,
-                    tlsRecords.Tls12AvailableWithBestCipherSuiteSelectedFromReverseList.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Tls12AvailableWithSha2HashFunctionSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages,
-                    tlsRecords.Tls12AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Tls11AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages,
-                    tlsRecords.Tls11AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Tls10AvailableWithBestCipherSuiteSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages,
-                    tlsRecords.Tls10AvailableWithWeakCipherSuiteNotSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Ssl3FailsWithBadCipherSuite.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.TlsSecureEllipticCurveSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.TlsSecureDiffieHellmanGroupSelected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.TlsWeakCipherSuitesRejected.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Tls12Available.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Tls11Available.TlsEvaluatedResult);
-                AddAdvisoryMessage(messages, tlsRecords.Tls10Available.TlsEvaluatedResult);
-            }
-
-            return messages;
-        }
-
-        private void AddAdvisoryMessage(List<TlsEvaluatedResult> messages, TlsEvaluatedResult tlsEvaluatedResult)
-        {
-            if (tlsEvaluatedResult != null && (tlsEvaluatedResult.Result == EvaluatorResult.FAIL
-                                               || tlsEvaluatedResult.Result == EvaluatorResult.INCONCLUSIVE
-                                               || tlsEvaluatedResult.Result == EvaluatorResult.INFORMATIONAL
-                                               || tlsEvaluatedResult.Result == EvaluatorResult.WARNING))
-            {
-                messages.Add(tlsEvaluatedResult);
-            }
-        }
-
-        private MessageType GetMessageType(EvaluatorResult tlsEvaluatedResult)
-        {
-            switch (tlsEvaluatedResult)
-            {
-                case EvaluatorResult.FAIL:
+                case ErrorType.Error:
                     return MessageType.error;
-                case EvaluatorResult.WARNING:
+                case ErrorType.Warning:
                     return MessageType.warning;
-                case EvaluatorResult.INCONCLUSIVE:
-                case EvaluatorResult.INFORMATIONAL:
+                case ErrorType.Inconclusive:
                     return MessageType.info;
             }
 
-            throw new InvalidOperationException("unsupported result type");
+            throw new InvalidOperationException($"unsupported error type: {x.ErrorType}");
+        }
+
+        private MessageType GetMessageTypeFromConfigMessage(TlsEvaluatedResult tlsEvaluatedResult)
+        {
+            if (tlsEvaluatedResult != null)
+            {
+                switch (tlsEvaluatedResult.Result)
+                {
+                    case EvaluatorResult.PASS:
+                        return MessageType.positive;
+                    case EvaluatorResult.FAIL:
+                        return MessageType.error;
+                    case EvaluatorResult.WARNING:
+                        return MessageType.warning;
+                    case EvaluatorResult.INCONCLUSIVE:
+                    case EvaluatorResult.INFORMATIONAL:
+                        return MessageType.info;
+                    default:
+                        _log.LogError($"Invalid tlsEvaluatedResult: {tlsEvaluatedResult.Result}");
+                        throw new InvalidOperationException($"unsupported result type: {tlsEvaluatedResult.Result}");
+                }
+            }
+            else
+            {
+                _log.LogError("tlsEvaluatedResult is null");
+                throw new InvalidOperationException($"tlsEvaluatedResult is null");
+            }
+        }
+
+        private IEnumerable<TlsEvaluatedResult> ExtractMessages(TlsRecords tlsRecords)
+        {
+            if ((tlsRecords?.Records?.Count ?? 0) == 0)
+            {
+                return Enumerable.Empty<TlsEvaluatedResult>();
+            }
+
+            return tlsRecords.Records
+                .Select(record => record.TlsEvaluatedResult)
+                .Where(tlsEvalResult =>
+                {
+                    var result = tlsEvalResult.Result;
+                    return result == EvaluatorResult.FAIL ||
+                           result == EvaluatorResult.INCONCLUSIVE ||
+                           result == EvaluatorResult.INFORMATIONAL ||
+                           result == EvaluatorResult.WARNING;
+                })
+                .ToList();
+        }
+    }
+
+    public class Advisories<T> where T : class
+    {
+        public List<T> Added { get; set; }
+        public List<T> Sustained { get; set; }
+        public List<T> Removed { get; set; }
+
+        public Advisories(IEnumerable<T> currentAdvisories, IEnumerable<T> newAdvisories)
+        {
+            currentAdvisories = currentAdvisories ?? Enumerable.Empty<T>();
+            newAdvisories = newAdvisories ?? Enumerable.Empty<T>();
+
+            Added = newAdvisories.Except(currentAdvisories).ToList();
+            Sustained = currentAdvisories.Intersect(newAdvisories).ToList();
+            Removed = currentAdvisories.Except(newAdvisories).ToList();
         }
     }
 }

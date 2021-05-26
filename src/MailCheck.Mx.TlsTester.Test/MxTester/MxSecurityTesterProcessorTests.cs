@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -19,6 +17,8 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
     [TestFixture]
     public class MxSecurityTesterProcessorTests
     {
+        private CancellationTokenSource _cleanUpTokenSource;
+
         private MxSecurityTesterProcessor _mxSecurityTesterProcessor;
         private IMxQueueProcessor _mxQueueProcessor;
         private IMessagePublisher _publisher;
@@ -26,29 +26,36 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
         private IMxTesterConfig _mxSecurityTesterConfig;
         private IMxSecurityProcessingFilter _processingFilter;
         private IRecentlyProcessedLedger _recentlyProcessedLedger;
+        private IHostClassifier _hostClassifier;
         private ILogger<MxSecurityTesterProcessor> _log;
-
         private ITargetBlock<object> _pipelineStartBlock;
-        private CancellationTokenSource cancellationTokenSource;
-        private Task cancellationTokenSourceTask;
+        private CancellationTokenSource _pipelineCancellationTokenSource;
+        private Task _pipelineCancellationTask;
 
         [SetUp]
         public void SetUp()
         {
+            _cleanUpTokenSource = new CancellationTokenSource();
+
             _mxQueueProcessor = A.Fake<IMxQueueProcessor>();
             _publisher = A.Fake<IMessagePublisher>();
             _mxHostTester = A.Fake<ITlsSecurityTesterAdapator>();
             _mxSecurityTesterConfig = A.Fake<IMxTesterConfig>();
             _processingFilter = A.Fake<IMxSecurityProcessingFilter>();
             _recentlyProcessedLedger = A.Fake<IRecentlyProcessedLedger>();
+            _hostClassifier = A.Fake<IHostClassifier>();
             _log = A.Fake<ILogger<MxSecurityTesterProcessor>>();
 
+            A.CallTo(() => _mxSecurityTesterConfig.BufferSize).Returns(10);
             A.CallTo(() => _mxSecurityTesterConfig.PublishBatchSize).Returns(1);
             A.CallTo(() => _mxSecurityTesterConfig.PublishBatchFlushIntervalSeconds).Returns(1);
             A.CallTo(() => _mxSecurityTesterConfig.TlsTesterThreadCount).Returns(1);
 
-            cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSourceTask = cancellationTokenSource.Token.WhenCanceled();
+            var fastResult = new ClassificationResult { Classification = Classifications.Fast };
+            A.CallTo(() => _hostClassifier.Classify(A<TlsTestPending>._)).Returns(Task.FromResult(fastResult));
+
+            _pipelineCancellationTokenSource = new CancellationTokenSource();
+            _pipelineCancellationTask = _pipelineCancellationTokenSource.Token.WhenCanceled();
 
             _mxSecurityTesterProcessor = new MxSecurityTesterProcessor(_mxQueueProcessor,
                 _publisher,
@@ -56,14 +63,24 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 _mxSecurityTesterConfig,
                 _processingFilter,
                 _recentlyProcessedLedger,
+                _hostClassifier,
                 _log,
-                RunPipelineDelegate);
+                RunPipelineDelegate
+                );
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _pipelineCancellationTokenSource?.Dispose();
+            _cleanUpTokenSource?.Cancel();
+            _cleanUpTokenSource?.Dispose();
         }
 
         private Task RunPipelineDelegate(ITargetBlock<object> inputBlock, CancellationToken cancelationToken)
         {
             _pipelineStartBlock = inputBlock;
-            return cancellationTokenSourceTask;
+            return _pipelineCancellationTask;
         }
 
         [Test]
@@ -72,11 +89,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _mxQueueProcessor.GetMxHosts())
                 .Returns(Task.FromResult(new List<TlsTestPending>()));
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -111,13 +128,13 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(true);
 
-            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).Returns(Task.CompletedTask);
             
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -155,11 +172,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -200,11 +217,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -221,7 +238,6 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _recentlyProcessedLedger.Set("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
             A.CallTo(() => _recentlyProcessedLedger.Set("host.domain2.gov.uk")).MustNotHaveHappened();
         }
-
 
         [Test]
         public async Task DuplicateHostToProcessNoProcessingOccurs()
@@ -241,11 +257,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(false);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -288,17 +304,17 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
             A.CallTo(() => _mxQueueProcessor.GetMxHosts()).MustHaveHappenedOnceExactly();
             A.CallTo(() => _mxHostTester.Test(A<TlsTestPending>._)).MustHaveHappened(3, Times.Exactly);
-            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).MustHaveHappened(3, Times.Exactly);
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).MustHaveHappened(3, Times.Exactly);
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).MustHaveHappened(3, Times.Exactly);
             A.CallTo(() => _processingFilter.Reserve(A<string>._)).MustHaveHappened(3, Times.Exactly);
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustHaveHappened(3, Times.Exactly);
@@ -316,6 +332,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 _mxSecurityTesterConfig,
                 _processingFilter,
                 _recentlyProcessedLedger,
+                _hostClassifier,
                 _log,
                 RunPipelineDelegate);
 
@@ -344,20 +361,125 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
             A.CallTo(() => _mxQueueProcessor.GetMxHosts()).MustHaveHappenedOnceExactly();
             A.CallTo(() => _mxHostTester.Test(A<TlsTestPending>._)).MustHaveHappened(2, Times.Exactly);
-            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).MustHaveHappened(2, Times.Exactly);
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).MustHaveHappened(2, Times.Exactly);
             A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).MustHaveHappened(2, Times.Exactly);
             A.CallTo(() => _processingFilter.Reserve(A<string>._)).MustHaveHappened(2, Times.Exactly);
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustHaveHappened(2, Times.Exactly);
+        }
+
+        [Test]
+        public async Task FastAndSlowHostsAreProcessed()
+        {
+            var testPending = CreateMxHostTestPending(1);
+            var testPending2 = CreateMxHostTestPending(2);
+
+            List<TlsTestPending> firstHosts = new List<TlsTestPending>
+            {
+                testPending,
+                testPending2
+            };
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts())
+                .Returns(Task.FromResult(firstHosts)).Once()
+                .Then
+                .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            var fastClassification = new ClassificationResult { Classification = Classifications.Fast };
+            var slowClassification = new ClassificationResult { Classification = Classifications.Slow };
+
+            A.CallTo(() => _hostClassifier.Classify(testPending)).Returns(Task.FromResult(fastClassification));
+            A.CallTo(() => _hostClassifier.Classify(testPending2)).Returns(Task.FromResult(slowClassification));
+
+            var waiter = new TaskCompletionSource<int>();
+            var testResult = CreateMxHostTestResult();
+            A.CallTo(() => _mxHostTester.Test(testPending)).Returns(waiter.Task.ContinueWith<TlsTestResults>(_ => testResult));
+            A.CallTo(() => _mxHostTester.Test(testPending2)).Returns(Task.FromResult(testResult));
+            A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(true);
+            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
+
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId1", A<string>._)).Returns(Task.CompletedTask);
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId2", A<string>._)).Invokes(() => { waiter.SetResult(0); } ).Returns(Task.CompletedTask);
+
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
+
+            await _pipelineStartBlock.SendAsync(null);
+
+            _pipelineCancellationTokenSource.Cancel();
+
+            await process;
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts()).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxHostTester.Test(A<TlsTestPending>._)).MustHaveHappened(2, Times.Exactly);
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).MustHaveHappened(2, Times.Exactly);
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).MustHaveHappened(2, Times.Exactly);
+            A.CallTo(() => _processingFilter.Reserve(A<string>._)).MustHaveHappened(2, Times.Exactly);
+            A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustHaveHappened(2, Times.Exactly);
+        }
+
+        [Test]
+        public async Task MultipleSlowHostsDoesNotPreventFastHostBeingProcessed()
+        {
+            var testPending = CreateMxHostTestPending(1);
+            var testPending2 = CreateMxHostTestPending(2);
+            var testPending3 = CreateMxHostTestPending(3);
+            var testPending4 = CreateMxHostTestPending(4);
+
+            List<TlsTestPending> firstHosts = new List<TlsTestPending>
+            {
+                testPending,
+                testPending2,
+                testPending4,
+                testPending3
+            };
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts())
+                .Returns(Task.FromResult(firstHosts)).Once()
+                .Then
+                .Returns(Task.FromResult(new List<TlsTestPending>()));
+
+            var fastClassification = new ClassificationResult { Classification = Classifications.Fast };
+            var slowClassification = new ClassificationResult { Classification = Classifications.Slow };
+
+            A.CallTo(() => _hostClassifier.Classify(testPending)).Returns(Task.FromResult(slowClassification));
+            A.CallTo(() => _hostClassifier.Classify(testPending2)).Returns(Task.FromResult(slowClassification));
+            A.CallTo(() => _hostClassifier.Classify(testPending3)).Returns(Task.FromResult(fastClassification));
+            A.CallTo(() => _hostClassifier.Classify(testPending4)).Returns(Task.FromResult(slowClassification));
+
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage(A<string>._, A<string>._)).Returns(Task.CompletedTask);
+
+            var testResult = CreateMxHostTestResult();
+            A.CallTo(() => _mxHostTester.Test(testPending)).Returns(TaskHelpers.NeverReturn<TlsTestResults>());
+            A.CallTo(() => _mxHostTester.Test(testPending2)).Returns(TaskHelpers.NeverReturn<TlsTestResults>());
+            A.CallTo(() => _mxHostTester.Test(testPending3)).Returns(Task.FromResult(testResult));
+
+            A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(true);
+
+            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
+
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
+
+            await _pipelineStartBlock.SendAsync(null);
+
+            _pipelineCancellationTokenSource.Cancel();
+
+            await process;
+
+            A.CallTo(() => _mxQueueProcessor.GetMxHosts()).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxHostTester.Test(testPending3)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _publisher.Publish(testResult, A<string>._)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _mxQueueProcessor.DeleteMessage("MessageId3", A<string>._)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _processingFilter.Reserve(A<string>._)).MustHaveHappened(4, Times.Exactly);
+            A.CallTo(() => _processingFilter.ReleaseReservation("host.domain3.gov.uk")).MustHaveHappenedOnceExactly();
         }
 
         [Test]
@@ -382,13 +504,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _processingFilter.Reserve(A<string>._)).Returns(true);
 
-            A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
-
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -424,11 +544,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(testResult, A<string>._)).Throws<Exception>();
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -466,11 +586,11 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
 
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 
@@ -509,12 +629,12 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
 
             A.CallTo(() => _publisher.Publish(A<Message>._, A<string>._)).Returns(Task.CompletedTask);
 
-            Task process = _mxSecurityTesterProcessor.Process(cancellationTokenSource.Token);
+            Task process = _mxSecurityTesterProcessor.Process(_pipelineCancellationTokenSource.Token);
 
             await _pipelineStartBlock.SendAsync(null);
             await _pipelineStartBlock.SendAsync(null);
             
-            cancellationTokenSource.Cancel();
+            _pipelineCancellationTokenSource.Cancel();
 
             await process;
 

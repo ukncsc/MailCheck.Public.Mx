@@ -16,7 +16,7 @@ namespace MailCheck.Mx.Contracts.SharedDomain
 
         protected bool Equals(TlsEvaluatedResult other)
         {
-            return string.Equals(Id, other.Id);
+            return Result == other.Result && String.Equals(Description, other.Description);
         }
 
         public override bool Equals(object obj)

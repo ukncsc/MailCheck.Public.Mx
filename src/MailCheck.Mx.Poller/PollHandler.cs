@@ -29,21 +29,22 @@ namespace MailCheck.Mx.Poller
 
         public async Task Handle(MxPollPending message)
         {
+            string domain = message.Id;
             try
             {
-                MxPollResult dmarcPollResult = await _processor.Process(message.Id);
+                MxPollResult dmarcPollResult = await _processor.Process(domain);
 
-                _log.LogInformation("Polled MX records for {Domain}", message.Id);
+                _log.LogInformation($"Polled MX records for {domain}");
 
                 MxRecordsPolled mxRecordsPolled = dmarcPollResult.ToMxRecordsPolled();
 
                 _dispatcher.Dispatch(mxRecordsPolled, _config.SnsTopicArn);
 
-                _log.LogInformation("Published MX records for {Domain}", message.Id);
+                _log.LogInformation($"Published MX records for {domain}");
             }
             catch (System.Exception ex)
             {
-                _log.LogError(ex, $"Error occurred polling domain {message.Id}");
+                _log.LogError(ex, $"Error occurred polling domain {domain}");
                 throw;
             }
         }

@@ -18,6 +18,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
     public interface ITlsSecurityTester
     {
         Task<List<TlsTestResult>> Test(string host);
+        Task<List<TlsTestResult>> Test(string host, int[] testIds);
     }
 
     public class TlsSecurityTester : ITlsSecurityTester
@@ -46,14 +47,21 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _log = log;
         }
 
-        public async Task<List<TlsTestResult>> Test(string host)
+        public Task<List<TlsTestResult>> Test(string host)
+        {
+            return Test(host, null);
+        }
+
+        public async Task<List<TlsTestResult>> Test(string host, int[] testIds)
         {
             List<TlsTestResult> testResults = new List<TlsTestResult>();
-            var sw = new Stopwatch();
+            Stopwatch sw = new Stopwatch();
 
-            _log.LogDebug($"Beginning test run of {_tests.Count} tests for {host ?? "null"}");
+            List<ITlsTest> testsToRun = (testIds == null || testIds.Length == 0) ? _tests : _tests.Where(t => testIds.Contains(t.Id)).ToList();
 
-            foreach (ITlsTest test in _tests)
+            _log.LogDebug($"Beginning test run of {testsToRun.Count} tests for {host ?? "null"}");
+
+            foreach (ITlsTest test in testsToRun)
             {
                 sw.Restart();
                 _log.LogDebug($"Running test {test.Id} - {test.Name} for {host ?? "null"}");

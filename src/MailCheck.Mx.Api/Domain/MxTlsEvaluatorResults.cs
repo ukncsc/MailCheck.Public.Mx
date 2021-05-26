@@ -7,7 +7,7 @@ namespace MailCheck.Mx.Api.Domain
     public class MxTlsEvaluatorResults
     {
         public MxTlsEvaluatorResults(string hostname, int preference, DateTime lastChecked, List<string> warnings,
-            List<string> failures, List<string> informationals)
+            List<string> failures, List<string> informationals, List<string> positives)
         {
             Hostname = hostname;
             Preference = preference;
@@ -15,6 +15,7 @@ namespace MailCheck.Mx.Api.Domain
             Warnings = warnings;
             Failures = failures;
             Informationals = informationals;
+            Positives = positives;
         }
 
         public List<string> Failures { get; }
@@ -24,6 +25,8 @@ namespace MailCheck.Mx.Api.Domain
         public int Preference { get; }
 
         public List<string> Informationals { get; }
+
+        public List<string> Positives { get; }
 
         public DateTime LastChecked { get; }
 

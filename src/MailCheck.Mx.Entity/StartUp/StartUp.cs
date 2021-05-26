@@ -4,6 +4,7 @@ using Amazon.SimpleSystemsManagement;
 using MailCheck.Common.Data.Abstractions;
 using MailCheck.Common.Data.Implementations;
 using MailCheck.Common.Environment.Abstractions;
+using MailCheck.Common.Environment.FeatureManagement;
 using MailCheck.Common.Environment.Implementations;
 using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.Common.SSM;
@@ -33,7 +34,16 @@ namespace MailCheck.Mx.Entity.StartUp
                 .AddTransient<IChangeNotifiersComposite, ChangeNotifiersComposite>()
                 .AddTransient<IChangeNotifier, RecordChangedNotifier>()
                 .AddTransient<IEqualityComparer<HostMxRecord>, RecordEqualityComparer>()
-                .AddTransient<MxEntity>();
+                .AddConditionally(
+                    "NewScheduler",
+                    featureActiveRegistrations =>
+                    {
+                        featureActiveRegistrations.AddTransient<MxEntityNewScheduler>();
+                    },
+                    featureInactiveRegistrations =>
+                    {
+                        featureInactiveRegistrations.AddTransient<MxEntity>();
+                    });
         }
     }
 }
