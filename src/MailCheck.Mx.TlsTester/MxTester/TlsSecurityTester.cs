@@ -59,12 +59,12 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
             List<ITlsTest> testsToRun = (testIds == null || testIds.Length == 0) ? _tests : _tests.Where(t => testIds.Contains(t.Id)).ToList();
 
-            _log.LogDebug($"Beginning test run of {testsToRun.Count} tests for {host ?? "null"}");
+            _log.LogInformation($"Beginning test run of {testsToRun.Count} tests for {host ?? "null"}");
 
             foreach (ITlsTest test in testsToRun)
             {
                 sw.Restart();
-                _log.LogDebug($"Running test {test.Id} - {test.Name} for {host ?? "null"}");
+                _log.LogInformation($"Running test {test.Id} - {test.Name} for {host ?? "null"}");
 
                 ITlsClient tlsClient = _tlsClientFactory.Create();
 
@@ -72,14 +72,14 @@ namespace MailCheck.Mx.TlsTester.MxTester
                 {
                     BouncyCastleTlsTestResult result = await tlsClient.Connect(host, Port, test.Version, test.CipherSuites);
                     
-                    _log.LogDebug($"Result of test {test.Id} - {test.Name} for {host ?? "null"}:{ Environment.NewLine}{JsonConvert.SerializeObject(result, JsonSerializerSettings)}");
+                    _log.LogInformation($"Result of test {test.Id} - {test.Name} for {host ?? "null"}:{ Environment.NewLine}{JsonConvert.SerializeObject(result, JsonSerializerSettings)}");
 
                     testResults.Add(new TlsTestResult(test, result));
                 }
                 finally
                 {
-                    _log.LogDebug($"TLS test {test.Id} - {test.Name} for host {host ?? "null"} completed in {sw.ElapsedMilliseconds}ms");
-                    tlsClient.Disconnect();
+                    _log.LogInformation($"TLS test {test.Id} - {test.Name} for host {host ?? "null"} completed in {sw.ElapsedMilliseconds}ms");
+                    tlsClient.Dispose();
                 }
             }
 

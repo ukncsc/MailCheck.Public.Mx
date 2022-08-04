@@ -38,7 +38,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls10
                 case CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:
                 case CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA:
                 case CipherSuite.TLS_DHE_RSA_WITH_AES_128_CBC_SHA:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS,
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.INFORMATIONAL,
                             "TLS 1.0 is available and a secure cipher suite was selected.")
                         .ToTaskList();
 

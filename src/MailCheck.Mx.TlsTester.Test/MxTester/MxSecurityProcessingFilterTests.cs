@@ -1,4 +1,5 @@
 ﻿using FakeItEasy;
+using MailCheck.Mx.TlsTester.Config;
 using MailCheck.Mx.TlsTester.MxTester;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
@@ -17,6 +18,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
         public void SetUp()
         {
             var logger = A.Fake<ILogger<MxSecurityProcessingFilter>>();
+            var config = A.Fake<IMxTesterConfig>();
 
             _filter = new MxSecurityProcessingFilter(logger);
         }

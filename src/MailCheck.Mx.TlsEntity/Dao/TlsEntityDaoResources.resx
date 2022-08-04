@@ -141,15 +141,22 @@ ON DUPLICATE KEY UPDATE
     </value>
   </data> 
   <data name="GetDomainMxHosts" xml:space="preserve">
-    <value>SELECT r1.domain, r2.hostname, t.state FROM mx.MxRecord r1
+    <value>SELECT r1.domain, r2.hostname FROM mx.MxRecord r1
 join mx.MxRecord r2 on r1.domain = r2.domain
-join mx.TlsEntity t on t.hostname = r2.hostname
 where r1.hostname = @hostname
     </value>
   </data>
   <data name="GetDomainsFromMxHost" xml:space="preserve">
     <value>SELECT domain FROM mx.MxRecord
 where hostname = @hostname;
+    </value>
+  </data>
+  <data name="GetHostsStates" xml:space="preserve">
+    <value>SELECT hostname, 
+state->"$.certificateResults.errors" as certErrors, 
+state->"$.tlsRecords.records[*].tlsEvaluatedResult.result" as configErrors
+FROM mx.TlsEntity
+WHERE hostname IN ({0});
     </value>
   </data>
 </root>

@@ -79,19 +79,18 @@ namespace MailCheck.Mx.TlsTester.MxTester
             BouncyCastleTlsTestResult ssl3FailsWithBadCipherSuite = ToTestResult(results.FirstOrDefault(_ =>
                 _.Test.Id == (int) TlsTestType.Ssl3FailsWithBadCipherSuite));
 
-            BouncyCastleTlsTestResult tlsSecureEllipticCurveSelected = ToTestResult(results.FirstOrDefault(_ =>
-                _.Test.Id == (int) TlsTestType.TlsSecureEllipticCurveSelected));
-
             BouncyCastleTlsTestResult tlsSecureDiffieHellmanGroupSelected = ToTestResult(results.FirstOrDefault(_ =>
                 _.Test.Id == (int) TlsTestType.TlsSecureDiffieHellmanGroupSelected));
 
             BouncyCastleTlsTestResult tlsWeakCipherSuitesRejected = ToTestResult(results.FirstOrDefault(_ =>
                 _.Test.Id == (int) TlsTestType.TlsWeakCipherSuitesRejected));
 
+            BouncyCastleTlsTestResult tls13AvailableWithBestCipherSuiteSelected = ToTestResult(results.FirstOrDefault(_ =>
+                _.Test.Id == (int)TlsTestType.Tls13AvailableWithBestCipherSuiteSelected));
 
             return
                 new TlsTestResults(tlsTest.Id,
-                    IsErrored(results), 
+                    IsErrored(results),
                     CheckHostNotFound(results),
                     tls12AvailableWithBestCipherSuiteSelected,
                     tls12AvailableWithBestCipherSuiteSelectedFromReverseList,
@@ -102,9 +101,10 @@ namespace MailCheck.Mx.TlsTester.MxTester
                     tls10AvailableWithBestCipherSuiteSelected,
                     tls10AvailableWithWeakCipherSuiteNotSelected,
                     ssl3FailsWithBadCipherSuite,
-                    tlsSecureEllipticCurveSelected,
+                    null,
                     tlsSecureDiffieHellmanGroupSelected,
                     tlsWeakCipherSuitesRejected,
+                    tls13AvailableWithBestCipherSuiteSelected,
                     certificates.Select(_ => Convert.ToBase64String(_.RawData)).ToList(),
                     new List<SelectedCipherSuite>
                     {
@@ -128,12 +128,12 @@ namespace MailCheck.Mx.TlsTester.MxTester
                             tls10AvailableWithWeakCipherSuiteNotSelected?.CipherSuite?.ToString()),
                         new SelectedCipherSuite(TlsTestType.Ssl3FailsWithBadCipherSuite.ToString(),
                             ssl3FailsWithBadCipherSuite?.CipherSuite?.ToString()),
-                        new SelectedCipherSuite(TlsTestType.TlsSecureEllipticCurveSelected.ToString(),
-                            tlsSecureEllipticCurveSelected?.CipherSuite?.ToString()),
                         new SelectedCipherSuite(TlsTestType.TlsSecureDiffieHellmanGroupSelected.ToString(),
                             tlsSecureDiffieHellmanGroupSelected?.CipherSuite?.ToString()),
                         new SelectedCipherSuite(TlsTestType.TlsWeakCipherSuitesRejected.ToString(),
-                            tlsWeakCipherSuitesRejected?.CipherSuite?.ToString())
+                            tlsWeakCipherSuitesRejected?.CipherSuite?.ToString()),
+                        new SelectedCipherSuite(TlsTestType.Tls13AvailableWithBestCipherSuiteSelected.ToString(),
+                            tls13AvailableWithBestCipherSuiteSelected?.CipherSuite?.ToString()),
                     }
                 );
         }

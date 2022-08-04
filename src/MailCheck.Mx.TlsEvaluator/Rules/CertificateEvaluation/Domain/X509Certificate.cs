@@ -70,7 +70,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Domain
 
         public virtual string PublicKeyIdentifier => _msX509.PublicKey.Oid.Value;
 
-        public virtual bool HasKeyUsage => _bcX509.GetKeyUsage() != null;
+        public virtual bool HasKeyUsage =>  _bcX509.GetKeyUsage() != null;
 
         public virtual bool HasExtendedKeyUsage => _bcX509.GetExtensionValue(X509Extensions.ExtendedKeyUsage) != null;
 

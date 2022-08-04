@@ -69,5 +69,28 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.UnixEpoch.AddSeconds(ValidityPeriod + 9));
             Assert.True(_recentlyProcessedLedger.Contains("testHost"));
         }
+
+        [Test]
+        public void HostIsAddedToLedgerIfNotFound()
+        {
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.UnixEpoch);
+            Assert.False(_recentlyProcessedLedger.Contains("testHost"));
+
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.UnixEpoch.AddMinutes(5));
+            Assert.True(_recentlyProcessedLedger.Contains("testHost"));
+        }
+
+        [Test]
+        public void LedgerIsUpdatedForExpiredHost()
+        {
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.UnixEpoch);
+            _recentlyProcessedLedger.Set("testHost");
+
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.UnixEpoch.AddSeconds(ValidityPeriod + 1));
+            Assert.False(_recentlyProcessedLedger.Contains("testHost"));
+
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.UnixEpoch.AddSeconds(ValidityPeriod + 2));
+            Assert.True(_recentlyProcessedLedger.Contains("testHost"));
+        }
     }
 }

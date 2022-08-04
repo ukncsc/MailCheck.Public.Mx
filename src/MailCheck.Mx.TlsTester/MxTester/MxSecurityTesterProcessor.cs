@@ -28,6 +28,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
         private readonly IMessagePublisher _publisher;
         private readonly ITlsSecurityTesterAdapator _mxHostTester;
         private readonly IMxSecurityProcessingFilter _processingFilter;
+        private readonly IMxSecurityTesterIgnoredHostsFilter _ignoredHostsFilter;
         private readonly IRecentlyProcessedLedger _recentlyProcessedLedger;
         private readonly IHostClassifier _hostClassifier;
         private readonly IMxTesterConfig _config;
@@ -42,6 +43,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             ITlsSecurityTesterAdapator mxHostTester,
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
+            IMxSecurityTesterIgnoredHostsFilter ignoredHostsFilter,
             IRecentlyProcessedLedger recentlyProcessedLedger,
             IHostClassifier hostClassifier,
             ILogger<MxSecurityTesterProcessor> log
@@ -51,6 +53,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             mxHostTester,
             config,
             processingFilter,
+            ignoredHostsFilter,
             recentlyProcessedLedger,
             hostClassifier,
             log,
@@ -63,6 +66,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             ITlsSecurityTesterAdapator mxHostTester,
             IMxTesterConfig config,
             IMxSecurityProcessingFilter processingFilter,
+            IMxSecurityTesterIgnoredHostsFilter ignoredHostsFilter,
             IRecentlyProcessedLedger recentlyProcessedLedger,
             IHostClassifier hostClassifier,
             ILogger<MxSecurityTesterProcessor> log,
@@ -75,6 +79,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
             _log = log;
             _recentlyProcessedLedger = recentlyProcessedLedger;
             _processingFilter = processingFilter;
+            _ignoredHostsFilter = ignoredHostsFilter;
             _hostClassifier = hostClassifier;
             PublishBatchFlushInterval = TimeSpan.FromSeconds(_config.PublishBatchFlushIntervalSeconds);
             PrintStatsInterval = TimeSpan.FromSeconds(_config.PrintStatsIntervalSeconds);
@@ -256,13 +261,13 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
             try
             {
-                _log.LogDebug("Getting mx hosts to process.");
+                _log.LogInformation("Getting mx hosts to process.");
 
                 List<TlsTestPending> testsPending = await _mxQueueProcessor.GetMxHosts();
 
                 hosts.AddRange(testsPending.Select(tp => new MxHostTestDetails(tp) { NormalizedHostname = tp.Id.Trim().TrimEnd('.').ToLowerInvariant() }));
 
-                _log.LogDebug(testsPending.Count > 0
+                _log.LogInformation(testsPending.Count > 0
                     ? $"Found {testsPending.Count} mx hosts to test: {Environment.NewLine}{string.Join(Environment.NewLine, testsPending.Select(pendingTest => pendingTest.Id))}"
                     : "Didn't find any hosts to test.");
             }
@@ -278,12 +283,22 @@ namespace MailCheck.Mx.TlsTester.MxTester
         {
             using (_log.BeginScope(new Dictionary<string, object> { [TlsHostLogPropertyName] = host.Test.Id }))
             {
+                if (_ignoredHostsFilter.IsIgnored(host.NormalizedHostname))
+                {
+                    host.SkipTesting = true;
+
+                    _log.LogInformation($"Exclusion status for {host}: Host will be ignored in Tls Testing");
+
+                    return host;
+                }
+
                 host.SkipTesting = _recentlyProcessedLedger.Contains(host.NormalizedHostname);
 
                 _log.LogInformation($"Host {host.Test.Id} will be {(host.SkipTesting ? "skipped" : "processed")}");
                 return host;
             }
         }
+
 
         private IEnumerable<MxHostTestDetails> FilterHosts(MxHostTestDetails host)
         {
@@ -334,7 +349,10 @@ namespace MailCheck.Mx.TlsTester.MxTester
                         Stopwatch stopwatch = Stopwatch.StartNew();
                         _log.LogInformation($"Starting TLS test run");
 
-                        testDetails.TestResults = await _mxHostTester.Test(tlsTest);
+                        //TODO remove after simplified tester switchover
+                        var temporaryNonTestedResult = new TlsTestResults(tlsTest.Id, false, false, null, null, null,
+                            null, null, null, null, null, null, null, null, null, null, null);
+                        testDetails.TestResults = temporaryNonTestedResult;
                         _log.LogInformation($"Completed TLS test run, time taken : {stopwatch.ElapsedMilliseconds}ms");
                     }
                     catch (Exception e)

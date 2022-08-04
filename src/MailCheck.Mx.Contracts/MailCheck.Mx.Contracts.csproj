@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MailCheck.Common.Contracts" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Messaging" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.Contracts" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Messaging" Version="13.0.0" />
   </ItemGroup>
 
 </Project>

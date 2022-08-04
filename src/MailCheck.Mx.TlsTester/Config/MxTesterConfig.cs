@@ -8,6 +8,7 @@ namespace MailCheck.Mx.TlsTester.Config
         string SnsTopicArn { get; }
         string SqsQueueUrl { get; }
         string SmtpHostName { get; }
+        string[] TlsTesterIgnoredHosts { get; }
 
         int BufferSize { get; }
 
@@ -46,6 +47,7 @@ namespace MailCheck.Mx.TlsTester.Config
             SnsTopicArn = environmentVariables.Get("SnsTopicArn");
             SqsQueueUrl = environmentVariables.Get("SqsQueueUrl");
             SmtpHostName = environmentVariables.Get("SmtpHostName");
+            TlsTesterIgnoredHosts = (environmentVariables.Get("TlsTesterIgnoredHosts") ?? "").Split(',');
             BufferSize = environmentVariables.GetAsInt("BufferSize");
             PublishBatchFlushIntervalSeconds = environmentVariables.GetAsInt("PublishBatchFlushIntervalSeconds");
             PublishBatchSize = environmentVariables.GetAsInt("PublishBatchSize");
@@ -58,6 +60,7 @@ namespace MailCheck.Mx.TlsTester.Config
         public string SnsTopicArn { get; }
         public string SmtpHostName { get; }
         public string SqsQueueUrl { get; }
+        public string[] TlsTesterIgnoredHosts { get; }
         public int BufferSize { get; }
         public int RefreshIntervalSeconds { get; }
         public int PublishBatchFlushIntervalSeconds { get; }

@@ -11,6 +11,8 @@ namespace MailCheck.Mx.TlsEntity.Config
         int NextScheduledInSeconds { get; }
         int MinimumSchedulerInterval { get; }
         string RecordType { get; }
+        string WebUrl { get; }
+        string SimplifiedRecordType { get; }
     }
 
     public class TlsEntityConfig : ITlsEntityConfig
@@ -24,6 +26,8 @@ namespace MailCheck.Mx.TlsEntity.Config
             TlsResultsCacheInSeconds = environmentVariables.GetAsInt("TlsResultsCacheInSeconds");
             MinimumSchedulerInterval = environmentVariables.GetAsInt("MinimumSchedulerInterval");
             RecordType = "TLS";
+            WebUrl = environmentVariables.Get("WebUrl");
+            SimplifiedRecordType = "SIMPLIFIEDTLS";
         }
 
         public int TlsResultsCacheInSeconds { get; }
@@ -33,5 +37,7 @@ namespace MailCheck.Mx.TlsEntity.Config
         public string SnsTopicArn { get; }
         public int MaxTlsRetryAttempts { get; }
         public string RecordType { get; }
+        public string WebUrl { get; }
+        public string SimplifiedRecordType { get; }
     }
 }

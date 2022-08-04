@@ -31,7 +31,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls10
                 case TlsError.HANDSHAKE_FAILURE:
                 case TlsError.PROTOCOL_VERSION:
                 case TlsError.INSUFFICIENT_SECURITY:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS)
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.INFORMATIONAL)
                         .ToTaskList();
 
                 case TlsError.TCP_CONNECTION_FAILED:
@@ -65,7 +65,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls10
                 case CipherSuite.TLS_RSA_WITH_RC4_128_SHA:
                 case CipherSuite.TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA:
                 case CipherSuite.TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS)
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.INFORMATIONAL)
                         .ToTaskList();
 
                 case CipherSuite.TLS_RSA_WITH_RC4_128_MD5:

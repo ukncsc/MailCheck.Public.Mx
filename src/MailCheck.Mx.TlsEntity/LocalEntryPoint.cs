@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Amazon.Lambda.SQSEvents;
 using Amazon.Runtime;
@@ -8,6 +9,8 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using MailCheck.Common.Messaging;
 using Microsoft.Extensions.CommandLineUtils;
+
+[assembly:InternalsVisibleTo("MailCheck.Mx.TlsEntity.Test")]
 
 namespace MailCheck.Mx.TlsEntity
 {

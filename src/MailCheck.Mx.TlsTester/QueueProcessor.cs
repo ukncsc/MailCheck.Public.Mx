@@ -48,7 +48,7 @@ namespace MailCheck.Mx.TlsTester
             {
                 try
                 {
-                    _log.LogDebug($"Deserializing SQS message {message.MessageId}");
+                    _log.LogInformation($"Deserializing SQS message {message.MessageId}");
                     TlsTestPending pendingTest = JsonConvert.DeserializeObject<TlsTestPending>(message.Body);
                     pendingTest.MessageId = message.MessageId;
                     pendingTest.ReceiptHandle = message.ReceiptHandle;
@@ -65,7 +65,7 @@ namespace MailCheck.Mx.TlsTester
 
         public async Task DeleteMessage(string messageId, string receiptHandle)
         {
-            _log.LogDebug($"Deleting SQS message {messageId}");
+            _log.LogInformation($"Deleting SQS message {messageId}");
 
             DeleteMessageBatchRequest deleteMessageRequest = new DeleteMessageBatchRequest
             {

@@ -58,7 +58,7 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
         public async Task<ClassificationResult> Classify(TlsTestPending tlsTest)
         {
-            _log.LogDebug($"Starting canary test run for host {tlsTest.Id}.");
+            _log.LogInformation($"Starting canary test run for host {tlsTest.Id}.");
 
             using (CancellationTokenSource tokenSource = new CancellationTokenSource())
             {
@@ -69,14 +69,14 @@ namespace MailCheck.Mx.TlsTester.MxTester
                 Classifications classification;
                 if (ReferenceEquals(result, TimeoutResult))
                 {
-                    _log.LogDebug($"Canary test timed out for host {tlsTest.Id}.");
+                    _log.LogInformation($"Canary test timed out for host {tlsTest.Id}.");
                     classification = Classifications.Slow;
                 }
                 else
                 {
                     classification = Classifications.Fast;
                     tokenSource.Cancel();
-                    _log.LogDebug($"Completed canary test run without timeout for host {tlsTest.Id}.");
+                    _log.LogInformation($"Completed canary test run without timeout for host {tlsTest.Id}.");
                 }
 
                 return new ClassificationResult

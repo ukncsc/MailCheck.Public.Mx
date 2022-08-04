@@ -19,14 +19,21 @@ namespace MailCheck.Mx.TlsEvaluator.Rules
     }
     public class CertificateEvaluatorHandler  : ICertificateEvaluatorHandler
     {
+        private static readonly IEvaluationErrorFactory HostDoesNotExist = 
+            new EvaluationErrorFactory("8837e6f1-f626-4d4f-9b1f-ba5dedc68849", "mailcheck.tlsCert.hostDoesNotExist", EvaluationErrorType.Inconclusive);
+
         private readonly IEvaluator<HostCertificates> _evaluator;
+        private readonly IEvaluator<HostCertificatesWithName> _namedEvaluator;
         private readonly ILogger<CertificateEvaluatorHandler> _log;
 
-        public CertificateEvaluatorHandler(IEvaluator<HostCertificates> evaluator,
+        public CertificateEvaluatorHandler(
+            IEvaluator<HostCertificates> evaluator,
+            IEvaluator<HostCertificatesWithName> namedEvaluator,
             ILogger<CertificateEvaluatorHandler> log)
 
         {
             _evaluator = evaluator;
+            _namedEvaluator = namedEvaluator;
             _log = log;
         }
 
@@ -59,14 +66,22 @@ namespace MailCheck.Mx.TlsEvaluator.Rules
        
         private async Task<EvaluationResult<HostCertificates>> Evaluate(HostCertificates hostCertificates)
         {
-            if (hostCertificates != null && hostCertificates.Host == "." )
+            if (hostCertificates != null && hostCertificates.Host == ".")
             {
                return new EvaluationResult<HostCertificates>(hostCertificates, new List<EvaluationError>());
             }
 
-            return hostCertificates != null && hostCertificates.HostNotFound
-                    ? await GetHostNotFoundResult(hostCertificates)
-                    : await _evaluator.Evaluate(hostCertificates);
+            if (hostCertificates != null && hostCertificates.HostNotFound)
+            {
+                return await GetHostNotFoundResult(hostCertificates);
+            }
+
+            var results = await _evaluator.Evaluate(hostCertificates);
+            var namedResults = await _namedEvaluator.Evaluate(new HostCertificatesWithName(hostCertificates.Host, hostCertificates));
+
+            results.Errors.AddRange(namedResults.Errors);
+
+            return results;
         }
 
         private static Task<EvaluationResult<HostCertificates>>
@@ -74,7 +89,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules
             Task.FromResult(new EvaluationResult<HostCertificates>(hostCertificates,
                 new List<EvaluationError>
                 {
-                    new EvaluationError(EvaluationErrorType.Error, $"The host {hostCertificates.Host} does not exist.")
+                    HostDoesNotExist.Create($"The host {hostCertificates.Host} does not exist.")
                 }));
     }
 }

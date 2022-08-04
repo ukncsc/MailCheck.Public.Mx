@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+	<resheader name="reader">
+		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+	<resheader name="writer">
+		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+	<data name="CertificateShouldMatchHostName" xml:space="preserve">
+		<value>Your email host is {0} but your certificate does not reference this host properly. This should be done by including your email host in the Subject Alternative Name. The Subject Alternative Name for your certificate is currently {1}.
+
+**Impact**
+
+If you have not yet configured MTA-STS, or have MTA-STS in ‘testing’ mode, then email is still encrypted and being delivered, but other email servers can't validate properly that they are communicating with your email servers.
+
+If you have an MTA-STS policy of ‘enforce’ in place, inbound email will not be delivered.</value>
+	</data>
+</root>

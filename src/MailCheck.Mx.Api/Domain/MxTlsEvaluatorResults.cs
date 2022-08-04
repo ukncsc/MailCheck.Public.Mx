@@ -7,7 +7,7 @@ namespace MailCheck.Mx.Api.Domain
     public class MxTlsEvaluatorResults
     {
         public MxTlsEvaluatorResults(string hostname, int preference, DateTime lastChecked, List<string> warnings,
-            List<string> failures, List<string> informationals, List<string> positives)
+            List<string> failures, List<string> informationals, List<string> positives, List<IpState> associatedIps)
         {
             Hostname = hostname;
             Preference = preference;
@@ -16,6 +16,7 @@ namespace MailCheck.Mx.Api.Domain
             Failures = failures;
             Informationals = informationals;
             Positives = positives;
+            AssociatedIps = associatedIps;
         }
 
         public List<string> Failures { get; }
@@ -31,25 +32,33 @@ namespace MailCheck.Mx.Api.Domain
         public DateTime LastChecked { get; }
 
         public List<string> Warnings { get; }
+
+        public List<IpState> AssociatedIps { get; }
     }
 
     public class MxTlsCertificateEvaluatorResults
     {
-        public MxTlsCertificateEvaluatorResults(string hostname, int preference, DateTime lastChecked, List<Certificate> certificates, List<Error> errors)
+        public MxTlsCertificateEvaluatorResults(string hostname, int preference, DateTime lastChecked, 
+            List<Certificate> certificates, List<Error> errors, List<IpState> associatedIps)
         {
             HostName = hostname;
             Preference = preference;
             LastChecked = lastChecked;
             Certificates = certificates;
             Errors = errors;
+            AssociatedIps = associatedIps;
         }
 
         public string HostName { get; }
+
         public int Preference { get; }
+
         public DateTime LastChecked { get; }
 
         public List<Certificate> Certificates { get; }
 
         public List<Error> Errors { get; }
+
+        public List<IpState> AssociatedIps { get; }
     }
 }

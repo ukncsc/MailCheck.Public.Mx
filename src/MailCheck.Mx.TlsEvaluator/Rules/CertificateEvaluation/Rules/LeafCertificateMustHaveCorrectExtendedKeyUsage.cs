@@ -8,6 +8,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class LeafCertificateMustHaveCorrectExtendedKeyUsage : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory LeafCertificateMustHaveCorrectExtendedKeyUsageFactory = 
+            new EvaluationErrorFactory("f2aaac7c-b2ea-4f3d-b9df-c8ab14dfb06b", "mailcheck.tlsCert.leafCertificateMustHaveCorrectExtendedKeyUsage", EvaluationErrorType.Error);
+
         private readonly ILogger<LeafCertificateMustHaveCorrectExtendedKeyUsage> _log;
 
         public LeafCertificateMustHaveCorrectExtendedKeyUsage(ILogger<LeafCertificateMustHaveCorrectExtendedKeyUsage> log)
@@ -23,8 +26,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 
             if (HasInvalidExtendedKeyUsage(leafCertificate))
             {
-                errors.Add(new EvaluationError(
-                    EvaluationErrorType.Error,
+                errors.Add(LeafCertificateMustHaveCorrectExtendedKeyUsageFactory.Create(
                     $"The extended key usage for the certificate with common name {leafCertificate.CommonName} must contain id-kp-serverAuth or anyExtendedKeyUsage to allow it to form a TLS connection."));
 
                 _log.LogInformation($"Found misconfigured extended key usage for host {hostCertificates.Host}.");

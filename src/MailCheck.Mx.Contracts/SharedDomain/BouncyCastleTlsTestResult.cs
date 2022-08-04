@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
+using MailCheck.Mx.BouncyCastle;
 using Newtonsoft.Json;
 
 namespace MailCheck.Mx.Contracts.SharedDomain
@@ -43,7 +44,8 @@ namespace MailCheck.Mx.Contracts.SharedDomain
             ErrorDescription = errorDescription;
             SmtpResponses = smtpResponses;
         }
-
+        
+        public StartTlsResult SessionInitialisationResult { get; set; }
         public TlsVersion? Version { get; }
         public CipherSuite? CipherSuite { get; }
         public CurveGroup? CurveGroup { get; }

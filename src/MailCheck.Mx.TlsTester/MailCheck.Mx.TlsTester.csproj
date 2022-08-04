@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>MailCheck.Mx.TlsTester</AssemblyName>
     <PackageId>MailCheck.Mx.TlsTester</PackageId>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -12,18 +12,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
-    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.5.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.0.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Flurl.Http" Version="2.4.1" />
-    <PackageReference Include="MailCheck.Common.Messaging" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Api" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Util" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.SSM" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.Messaging" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Api" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Util" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.SSM" Version="13.0.0" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <DotNetCliToolReference Include="Amazon.Lambda.Tools" Version="2.2.0" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.5.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>

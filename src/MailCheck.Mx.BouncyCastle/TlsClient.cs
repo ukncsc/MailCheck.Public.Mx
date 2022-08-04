@@ -1,60 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using MailCheck.Mx.BouncyCastle.Config;
 using MailCheck.Mx.Contracts.SharedDomain;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Crypto.Tls;
-using Org.BouncyCastle.Security;
 using CipherSuite = MailCheck.Mx.Contracts.SharedDomain.CipherSuite;
+using OldApi = MailCheck.Mx.BouncyCastle.OldBouncyCastleTlsApi;
+using NewApi = MailCheck.Mx.BouncyCastle.NewBouncyCastleTlsApi;
 
 namespace MailCheck.Mx.BouncyCastle
 {
-    public interface ITlsClient
+    public interface ITlsClient : IDisposable
     {
-        Task Connect(string host, int port);
         Task<BouncyCastleTlsTestResult> Connect(string host, int port, TlsVersion version, List<CipherSuite> cipherSuites);
-        NetworkStream GetStream();
-        void Disconnect();
     }
 
     public class TlsClient : ITlsClient
     {
-        private readonly TimeSpan _timeOut;
+        private readonly TimeSpan _sendReceiveTimeout;
+        private readonly TimeSpan _connectionTimeOut;
 
         private readonly ILogger _log;
         private TcpClient _tcpClient;
 
-        public TlsClient(ILogger<TlsClient> log,
-            IBouncyCastleClientConfig config)
+        public TlsClient(ILogger<TlsClient> log, IBouncyCastleClientConfig config)
         {
             _log = log;
-            _timeOut = config.TlsConnectionTimeOut;
-        }
-
-        public TlsClient()
-        {
-            _timeOut = TimeSpan.FromSeconds(300); //5 minutes specified by RFC
-        }
-
-        public async Task Connect(string host, int port)
-        {
-            _tcpClient = new TcpClient();
-
-            await _tcpClient.ConnectAsync(host, port).ConfigureAwait(false);
-
-            StartTlsResult sessionInitialized = await TryInitializeSession(_tcpClient.GetStream()).ConfigureAwait(false);
-
-            if (!sessionInitialized.Success)
-            {
-                throw new Exception("Failed to initialize session.");
-            }
-
-            TlsClientProtocol clientProtocol = new TlsClientProtocol(_tcpClient.GetStream(), SecureRandom.GetInstance("SHA256PRNG"));
-
-            clientProtocol.Connect(new BasicTlsClient());
+            _sendReceiveTimeout = config.TcpSendReceiveTimeout;
+            _connectionTimeOut = config.TcpConnectionTimeout;
         }
 
         public async Task<BouncyCastleTlsTestResult> Connect(string host, int port, TlsVersion version, List<CipherSuite> cipherSuites)
@@ -70,6 +47,11 @@ namespace MailCheck.Mx.BouncyCastle
                 return e.SocketErrorCode == SocketError.HostNotFound
                     ? new BouncyCastleTlsTestResult(TlsError.HOST_NOT_FOUND, e.Message, null)
                     : new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, e.Message, null);
+            }
+            catch (OperationCanceledException e)
+            {
+                _log.LogError($"{e.GetType().Name} occurred {e.Message}{System.Environment.NewLine}{e.StackTrace}");
+                return new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, e.Message, null);
             }
             catch (ArgumentNullException e)
             {
@@ -95,43 +77,70 @@ namespace MailCheck.Mx.BouncyCastle
 
         private async Task<BouncyCastleTlsTestResult> DoConnect(string host, int port, TlsVersion version, List<CipherSuite> cipherSuites)
         {
-            _tcpClient = new TcpClient
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            TaskCompletionSource<bool> cancellationCompletionSource = new TaskCompletionSource<bool>();
+            using CancellationTokenSource cts = new CancellationTokenSource(_connectionTimeOut);
+            using (_tcpClient = new TcpClient
             {
                 NoDelay = true,
-                SendTimeout = _timeOut.Milliseconds,
-                ReceiveTimeout = _timeOut.Milliseconds,
-            };
-
-            _log.LogDebug($"Starting TCP connection to {host ?? "<null>"}:{port}");
-            await _tcpClient.ConnectAsync(host, port).ConfigureAwait(false);
-            _log.LogDebug($"Successfully started TCP connection to {host ?? "<null>"}:{port}");
-
-            _log.LogDebug("Initializing session");
-            StartTlsResult sessionInitialized = await TryInitializeSession(_tcpClient.GetStream()).ConfigureAwait(false);
-
-            if (!sessionInitialized.Success)
+                SendTimeout = (int)_sendReceiveTimeout.TotalMilliseconds,
+                ReceiveTimeout = (int)_sendReceiveTimeout.TotalMilliseconds,
+            })
             {
-                _log.LogDebug("Failed to initialize session");
-                return new BouncyCastleTlsTestResult(TlsError.SESSION_INITIALIZATION_FAILED, sessionInitialized.Error,
-                    sessionInitialized.SmtpSession);
+                _log.LogInformation($"Starting TCP connection to {host ?? "<null>"}:{port}");
+                Task task = _tcpClient.ConnectAsync(host, port);
+
+                await using (cts.Token.Register(() => cancellationCompletionSource.TrySetResult(true)))
+                {
+                    if (task != await Task.WhenAny(task, cancellationCompletionSource.Task))
+                    {
+                        _log.LogInformation($"TCP client timed out after {stopwatch.ElapsedMilliseconds}ms");
+                        throw new OperationCanceledException(cts.Token);
+                    }
+                }
+
+                if (!_tcpClient.Connected)
+                {
+                    _log.LogInformation($"TCP client failed to connect after {stopwatch.ElapsedMilliseconds}ms");
+                    return new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, string.Empty, null);
+                }
+
+                _log.LogInformation($"Successfully started TCP connection to {host ?? "<null>"}:{port}");
+
+                await using NetworkStream stream = _tcpClient.GetStream();
+
+                _log.LogInformation("Initializing session");
+                StartTlsResult sessionInitialized = await TryInitializeSession(stream).ConfigureAwait(false);
+
+                if (!sessionInitialized.Success)
+                {
+                    _log.LogInformation("Failed to initialize session");
+                    BouncyCastleTlsTestResult result = new BouncyCastleTlsTestResult(TlsError.SESSION_INITIALIZATION_FAILED, sessionInitialized.Error, sessionInitialized.SmtpSession)
+                    {
+                        SessionInitialisationResult = sessionInitialized
+                    };
+                    return result;
+                }
+
+                _log.LogInformation("Successfully initialized session");
+
+                ITlsWrapper wrapper;
+
+                if (version == TlsVersion.TlsV13)
+                {
+                    wrapper = new NewApi.TlsWrapper();
+                }
+                else
+                {
+                    wrapper = new OldApi.TlsWrapper();
+                }
+
+                _log.LogInformation("Starting TLS session");
+                BouncyCastleTlsTestResult connectionResult = wrapper.ConnectWithResults(stream, version, cipherSuites);
+                _log.LogInformation("Successfully collected TLS connection result");
+
+                return connectionResult;
             }
-            
-            _log.LogDebug("Successfully initialized session");
-
-            TestTlsClientProtocol clientProtocol = new TestTlsClientProtocol(_tcpClient.GetStream());
-
-            TestTlsClient testSuiteTlsClient = new TestTlsClient(version, cipherSuites);
-
-            _log.LogDebug("Starting TLS session");
-            BouncyCastleTlsTestResult connectionResult = clientProtocol.ConnectWithResults(testSuiteTlsClient);
-            _log.LogDebug("Successfully started TLS session");
-
-            return connectionResult;
-        }
-
-        public NetworkStream GetStream()
-        {
-            return _tcpClient?.GetStream();
         }
 
         //Override this if for example you are using SMTP and you need to STARTTLS
@@ -141,7 +150,7 @@ namespace MailCheck.Mx.BouncyCastle
             return Task.FromResult(new StartTlsResult(false, null, string.Empty));
         }
 
-        public void Disconnect()
+        public void Dispose()
         {
             _tcpClient?.Dispose();
         }

@@ -16,9 +16,7 @@ namespace MailCheck.Mx.Contracts.SharedDomain
 
         public Guid Id { get; }
         public string Source { get; }
-
         public MessageType MessageType { get; }
-
         public string Text { get; }
         public string MarkDown { get; }
         public MessageDisplay MessageDisplay { get; }

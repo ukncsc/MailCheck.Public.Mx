@@ -6,8 +6,6 @@ using MailCheck.Mx.Contracts.Tester;
 using MailCheck.Mx.Contracts.TlsEvaluator;
 using MailCheck.Mx.TlsEvaluator.Config;
 using MailCheck.Mx.TlsEvaluator.Rules;
-using MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation;
-using MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Domain;
 
 namespace MailCheck.Mx.TlsEvaluator
 {

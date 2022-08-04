@@ -9,6 +9,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class AllCertificatesShouldHaveStrongKey : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory AllCertificatesShouldHaveStrongKeyFactory = 
+            new EvaluationErrorFactory("4d327b7e-aab1-4fa6-9dd3-855424afd3ca", "mailcheck.tlsCert.allCertificatesShouldHaveStrongKey", EvaluationErrorType.Error);
+
         private readonly ILogger<AllCertificatesShouldHaveStrongKey> _log;
 
         // ReSharper disable once InconsistentNaming
@@ -38,7 +41,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
         {
             int keyLength = GetMinKeySize(certificate.KeyAlgoritm);
             return certificate.KeyLength < keyLength 
-                ? new List<EvaluationError>{new EvaluationError(EvaluationErrorType.Error, 
+                ? new List<EvaluationError>{AllCertificatesShouldHaveStrongKeyFactory.Create(
                     string.Format(CertificateEvaluatorErrors.AllCertificatesShouldHaveStrongKey, certificate.CommonName, certificate.KeyAlgoritm, certificate.KeyLength, keyLength)) } 
                 : new List<EvaluationError>();
         }

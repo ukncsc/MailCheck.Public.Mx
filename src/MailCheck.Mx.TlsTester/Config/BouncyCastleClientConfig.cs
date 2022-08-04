@@ -8,9 +8,11 @@ namespace MailCheck.Mx.TlsTester.Config
     {
         public BouncyCastleClientConfig(IEnvironmentVariables environmentVariables)
         {
-            TlsConnectionTimeOut = TimeSpan.FromSeconds(environmentVariables.GetAsInt("TlsTestTimeoutSeconds"));
+            TcpSendReceiveTimeout = TimeSpan.FromSeconds(environmentVariables.GetAsInt("TcpSendReceiveTimeout"));
+            TcpConnectionTimeout = TimeSpan.FromSeconds(environmentVariables.GetAsInt("TcpConnectionTimeoutSeconds"));
         }
 
-        public TimeSpan TlsConnectionTimeOut { get; }
+        public TimeSpan TcpSendReceiveTimeout { get; }
+        public TimeSpan TcpConnectionTimeout { get; }
     }
 }

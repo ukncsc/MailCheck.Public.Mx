@@ -11,7 +11,8 @@ namespace MailCheck.Mx.Contracts.SharedDomain
         }
 
         [JsonConstructor]
-        public TlsRecords(TlsRecord tls12AvailableWithBestCipherSuiteSelected,
+        public TlsRecords(
+            TlsRecord tls12AvailableWithBestCipherSuiteSelected,
             TlsRecord tls12AvailableWithBestCipherSuiteSelectedFromReverseList,
             TlsRecord tls12AvailableWithSha2HashFunctionSelected,
             TlsRecord tls12AvailableWithWeakCipherSuiteNotSelected,
@@ -25,7 +26,9 @@ namespace MailCheck.Mx.Contracts.SharedDomain
             TlsRecord tlsWeakCipherSuitesRejected,
             TlsRecord tls12Available,
             TlsRecord tls11Available,
-            TlsRecord tls10Available)
+            TlsRecord tls10Available,
+            TlsRecord tls13Available,
+            TlsRecord tls13AvailableWithBestCipherSuiteSelected)
         {
             Tls12AvailableWithBestCipherSuiteSelected = tls12AvailableWithBestCipherSuiteSelected;
             Tls12AvailableWithBestCipherSuiteSelectedFromReverseList =
@@ -43,6 +46,8 @@ namespace MailCheck.Mx.Contracts.SharedDomain
             Tls12Available = tls12Available;
             Tls11Available = tls11Available;
             Tls10Available = tls10Available;
+            Tls13Available = tls13Available;
+            Tls13AvailableWithBestCipherSuiteSelected = tls13AvailableWithBestCipherSuiteSelected;
 
             Records = new List<TlsRecord>
             {
@@ -60,7 +65,9 @@ namespace MailCheck.Mx.Contracts.SharedDomain
                 tlsWeakCipherSuitesRejected,
                 tls12Available,
                 tls11Available,
-                tls10Available
+                tls10Available,
+                tls13Available,
+                tls13AvailableWithBestCipherSuiteSelected
             };
         }
         public TlsRecord Tls12AvailableWithBestCipherSuiteSelected { get; }
@@ -78,6 +85,8 @@ namespace MailCheck.Mx.Contracts.SharedDomain
         public TlsRecord Tls12Available { get; }
         public TlsRecord Tls11Available { get; }
         public TlsRecord Tls10Available { get; }
+        public TlsRecord Tls13Available { get; }
+        public TlsRecord Tls13AvailableWithBestCipherSuiteSelected { get; }
         public List<TlsRecord> Records { get; set; }
     }
 }

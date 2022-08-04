@@ -8,6 +8,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class AllCertificatesSignaturesShouldBeValid : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory AllCertificatesSignaturesShouldBeValidFactory = 
+            new EvaluationErrorFactory("009b977e-9fbf-4dcf-96c3-f250f3f853e7", "mailcheck.tlsCert.allCertificatesSignaturesShouldBeValid", EvaluationErrorType.Error);
+
         private readonly ILogger<AllCertificatesSignaturesShouldBeValid> _log;
 
         public AllCertificatesSignaturesShouldBeValid(ILogger<AllCertificatesSignaturesShouldBeValid> log)
@@ -28,7 +31,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
                 }
                 catch (Exception)
                 {
-                    errors.Add(new EvaluationError(EvaluationErrorType.Error, 
+                    errors.Add(AllCertificatesSignaturesShouldBeValidFactory.Create(
                         string.Format(CertificateEvaluatorErrors.AllCertificatesSignaturesShouldBeValid, hostCertificates.Certificates[i].CommonName)));
                 }
             }

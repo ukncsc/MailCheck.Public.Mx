@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
-using MailCheck.Common.Messaging.Abstractions;
+﻿using System;
 using MailCheck.Mx.Contracts.SharedDomain;
-using MailCheck.Mx.Contracts.Tester;
 
 namespace MailCheck.Mx.Contracts.TlsEvaluator
 {
@@ -20,7 +18,8 @@ namespace MailCheck.Mx.Contracts.TlsEvaluator
             BouncyCastleTlsTestResult ssl3FailsWithBadCipherSuite,
             BouncyCastleTlsTestResult tlsSecureEllipticCurveSelected,
             BouncyCastleTlsTestResult tlsSecureDiffieHellmanGroupSelected,
-            BouncyCastleTlsTestResult tlsWeakCipherSuitesRejected)
+            BouncyCastleTlsTestResult tlsWeakCipherSuitesRejected,
+            BouncyCastleTlsTestResult tls13AvailableWithBestCipherSuiteSelected)
         {
             Failed = failed;
             Tls12AvailableWithBestCipherSuiteSelected = tls12AvailableWithBestCipherSuiteSelected;
@@ -36,6 +35,7 @@ namespace MailCheck.Mx.Contracts.TlsEvaluator
             TlsSecureEllipticCurveSelected = tlsSecureEllipticCurveSelected;
             TlsSecureDiffieHellmanGroupSelected = tlsSecureDiffieHellmanGroupSelected;
             TlsWeakCipherSuitesRejected = tlsWeakCipherSuitesRejected;
+            Tls13AvailableWithBestCipherSuiteSelected = tls13AvailableWithBestCipherSuiteSelected;
         }
 
         public bool Failed { get; }
@@ -48,8 +48,10 @@ namespace MailCheck.Mx.Contracts.TlsEvaluator
         public BouncyCastleTlsTestResult Tls10AvailableWithBestCipherSuiteSelected { get; }
         public BouncyCastleTlsTestResult Tls10AvailableWithWeakCipherSuiteNotSelected { get; }
         public BouncyCastleTlsTestResult Ssl3FailsWithBadCipherSuite { get; }
+        [Obsolete]
         public BouncyCastleTlsTestResult TlsSecureEllipticCurveSelected { get; }
         public BouncyCastleTlsTestResult TlsSecureDiffieHellmanGroupSelected { get; }
         public BouncyCastleTlsTestResult TlsWeakCipherSuitesRejected { get; }
+        public BouncyCastleTlsTestResult Tls13AvailableWithBestCipherSuiteSelected { get; }
     }
 }

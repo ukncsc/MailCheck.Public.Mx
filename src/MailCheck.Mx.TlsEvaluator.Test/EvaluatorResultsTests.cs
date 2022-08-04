@@ -21,7 +21,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test
                 + "or because Mail Check servers have been blocked. We will keep trying to test TLS with this server, so please check back later or get in touch "
                 + "if you think there's a problem.";
 
-            var mxHostTlsResults = new TlsTestResults("abc.def.gov.uk", false, false, new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
+            var mxHostTlsResults = new TlsTestResults("abc.def.gov.uk", false, false, 
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
@@ -31,8 +31,11 @@ namespace MailCheck.Mx.TlsEvaluator.Test
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
+                null,
                 new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
-                new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null), null);
+                new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null),
+                new BouncyCastleTlsTestResult(TlsError.TCP_CONNECTION_FAILED, "", null), 
+                null);
 
             IMxSecurityEvaluator mxSecurityEvaluator = A.Fake<IMxSecurityEvaluator>();
             ILogger<EvaluationProcessor> log = A.Fake<ILogger<EvaluationProcessor>>();

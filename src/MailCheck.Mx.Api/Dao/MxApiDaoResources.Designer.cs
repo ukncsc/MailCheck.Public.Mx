@@ -19,7 +19,7 @@ namespace MailCheck.Mx.Api.Dao {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class MxApiDaoResources {
@@ -61,7 +61,8 @@ namespace MailCheck.Mx.Api.Dao {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT d.domain, d.mxState, h.hostMxRecord, d.lastUpdated, d.error FROM mx.MxRecord
+        ///   Looks up a localized string similar to SELECT d.domain, d.mxState, h.hostMxRecord, d.lastUpdated, d.error 
+        ///FROM mx.MxRecord
         ///JOIN MxHost h
         ///ON h.hostname = MxRecord.hostname
         ///JOIN Domain d
@@ -76,8 +77,34 @@ namespace MailCheck.Mx.Api.Dao {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT `TlsEntity`.`hostname`,
-        ///    `TlsEntity`.`state`
+        ///   Looks up a localized string similar to SELECT hostname, preference FROM MxRecord where domain = @domainId;
+        ///    .
+        /// </summary>
+        public static string GetPreference {
+            get {
+                return ResourceManager.GetString("GetPreference", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT hostEntity.hostname, hostEntity.ipAddress, ipEntity.json as ipJson, hostEntity.json as hostJson
+        ///FROM MxRecord mr
+        ///JOIN mx.SimplifiedTlsEntity hostEntity 
+        ///  ON mr.hostname = hostEntity.hostname
+        ///LEFT JOIN mx.SimplifiedTlsEntity ipEntity
+        ///  ON hostEntity.ipAddress = ipEntity.ipAddress
+        ///  AND ipEntity.hostname = &apos;*&apos;
+        ///WHERE mr.domain = @domainId;
+        ///    .
+        /// </summary>
+        public static string GetSimplifiedTlsEntityStates {
+            get {
+                return ResourceManager.GetString("GetSimplifiedTlsEntityStates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT `TlsEntity`.`hostname`, `TlsEntity`.`state`
         ///FROM `mx`.`TlsEntity`
         ///WHERE `TlsEntity`.`hostname` IN ({0})
         ///    .

@@ -7,15 +7,13 @@ namespace MailCheck.Mx.TlsEntity.Entity.DomainStatus
 {
     public interface IDomainStatusEvaluator
     {
-        Status GetStatus(List<TlsEvaluatedResult> evaluatedResults, List<Error> certificateErrors);
+        Status GetStatus(List<EvaluatorResult?> evaluatorResults, List<Error> certificateErrors);
     }
 
     public class DomainStatusEvaluator : IDomainStatusEvaluator
     {
-        public Status GetStatus(List<TlsEvaluatedResult> evaluatedResults, List<Error> certificateErrors)
+        public Status GetStatus(List<EvaluatorResult?> evaluatorResults, List<Error> certificateErrors)
         {
-            List<EvaluatorResult?> evaluatorResults = evaluatedResults?.Select(x => x.Result).ToList();
-
             Status status = Status.Success;
 
             if (evaluatorResults != null && evaluatorResults.Any(x => x == EvaluatorResult.FAIL) ||

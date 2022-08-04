@@ -5,10 +5,12 @@ using System.Runtime.InteropServices;
 using Amazon.SimpleNotificationService;
 using DnsClient;
 using MailCheck.Common.Messaging.Abstractions;
+using MailCheck.Common.Util;
 using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Poller.Config;
 using MailCheck.Mx.Poller.Dns;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -36,6 +38,7 @@ namespace MailCheck.Mx.Poller.StartUp
                 .AddTransient<MxProcessor>()
                 .AddSingleton(CreateLookupClient)
                 .AddTransient<IDnsClient, Dns.DnsClient>()
+                .AddTransient<IAuditTrailParser, AuditTrailParser>()
                 .AddTransient<IDnsNameServerProvider, LinuxDnsNameServerProvider>()
                 .AddTransient<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>()
                 .AddTransient<IMxProcessor, MxProcessor>()
@@ -45,7 +48,7 @@ namespace MailCheck.Mx.Poller.StartUp
 
         private static ILookupClient CreateLookupClient(IServiceProvider provider)
         {
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            LookupClient lookupClient =  RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? new LookupClient(NameServer.GooglePublicDns, NameServer.GooglePublicDnsIPv6)
                 {
                     Timeout = provider.GetRequiredService<IMxPollerConfig>().DnsRecordLookupTimeout
@@ -58,8 +61,11 @@ namespace MailCheck.Mx.Poller.StartUp
                     UseCache = false,
                     UseTcpOnly = true,
                     EnableAuditTrail = true,
+                    Retries = 0,
                     Timeout = provider.GetRequiredService<IMxPollerConfig>().DnsRecordLookupTimeout,
                 });
+
+            return new AuditTrailLoggingLookupClientWrapper(lookupClient, provider.GetService<IAuditTrailParser>(), provider.GetService<ILogger<AuditTrailLoggingLookupClientWrapper>>());
         }
     }
 }

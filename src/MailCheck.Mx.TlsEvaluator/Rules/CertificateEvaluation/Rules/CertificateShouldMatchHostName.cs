@@ -7,8 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
-    public class CertificateShouldMatchHostName : IRule<HostCertificates>
+    public class CertificateShouldMatchHostName : IRule<HostCertificatesWithName>
     {
+        private static readonly IEvaluationErrorFactory CertificateShouldMatchHostNameFactory = 
+            new EvaluationErrorFactory("729e3487-82df-47f7-a7df-d40d3cf4448e", "mailcheck.tlsCert.certificateShouldMatchHostName", EvaluationErrorType.Error);
+
         private readonly ILogger<CertificateShouldMatchHostName> _log;
         private readonly Regex _dnsName = new Regex("(dns name=|dns:)(?<dnsname>[^\\s,]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
@@ -17,12 +20,20 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
             _log = log;
         }
 
-        public Task<List<EvaluationError>> Evaluate(HostCertificates hostCertificates)
+        public Task<List<EvaluationError>> Evaluate(HostCertificatesWithName hostCertificatesWithName)
         {
-            _log.LogInformation("Running rule {RuleNumber}:{Rule} for host {Host}", SequenceNo, nameof(CertificateShouldMatchHostName), hostCertificates.Host);
-            X509Certificate certificate = hostCertificates.Certificates.First();
+            HostCertificates hostCertificates = hostCertificatesWithName.HostCertificates;
 
-            string host = hostCertificates.Host.Trim().TrimEnd('.').ToLower();
+            _log.LogInformation("Running rule {RuleNumber}:{Rule} for host {Host}", SequenceNo, nameof(CertificateShouldMatchHostName), hostCertificates.Host);
+
+            if (hostCertificates.Certificates == null || hostCertificates.Certificates.Count == 0)
+            {
+                return Task.FromResult(new List<EvaluationError>());
+            }
+
+            string host = hostCertificatesWithName.Hostname.Trim().TrimEnd('.').ToLower();
+
+            X509Certificate certificate = hostCertificates.Certificates.First();
 
             bool certificateValidForHost = false;
 
@@ -47,9 +58,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
                 ? new List<EvaluationError>()
                 : new List<EvaluationError>
                 {
-                    new EvaluationError(EvaluationErrorType.Error,
-                        string.Format(CertificateEvaluatorErrors.CertificateShouldMatchHostName, certificate.CommonName,
-                            certificate.SubjectAlternativeName ?? "<null>", host))
+                    CertificateShouldMatchHostNameFactory.Create(
+                        string.Format(CertificateEvaluatorErrors.CertificateShouldMatchHostName, host),
+                        string.Format(CertificateEvaluatorErrorsMarkdown.CertificateShouldMatchHostName, host, certificate.SubjectAlternativeName ?? "<null>"))
                 };
 
 

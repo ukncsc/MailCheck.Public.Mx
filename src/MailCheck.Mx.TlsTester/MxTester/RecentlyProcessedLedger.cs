@@ -30,23 +30,32 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
         public bool Contains(string host)
         {
-            _log.LogDebug($"Searching ledger for host: {host}");
+            _log.LogInformation($"Searching ledger for host: {host}");
 
             DateTime now = _clock.GetDateTimeUtc();
 
-            if (_ledgerItems.TryGetValue(host, out DateTime value) && value > now)
+            DateTime futureExpiry = now.AddHours(1);
+
+            DateTime currentValue = _ledgerItems.GetOrAdd(host, futureExpiry);
+
+            if(currentValue == futureExpiry)
             {
-                _log.LogDebug($"Host {host} found in ledger with TTL of {(_ledgerItems[host] - now).TotalSeconds} seconds");
-                return true;
+                _log.LogInformation($"Host {host} not found in ledger. {host} added to ledger.");
+                return false;
+            }
+            else if(currentValue < now && _ledgerItems.TryUpdate(host, futureExpiry, currentValue))
+            {
+                _log.LogInformation($"Host {host} found in ledger with TTL expired. Ledger updated to expire in 1 hour.");
+                return false;
             }
 
-            _log.LogDebug($"Host {host} not found in ledger");
-            return false;
+            _log.LogInformation($"Host {host} found in ledger with TTL of {(_ledgerItems[host] - now).TotalSeconds} seconds");
+            return true;
         }
 
         public void Set(string host)
         {
-            _log.LogDebug($"Setting {host} in ledger to expire in {_retestPeriod.TotalSeconds} seconds");
+            _log.LogInformation($"Setting {host} in ledger to expire in {_retestPeriod.TotalSeconds} seconds");
             _ledgerItems[host] = _clock.GetDateTimeUtc() + _retestPeriod;
         }
     }

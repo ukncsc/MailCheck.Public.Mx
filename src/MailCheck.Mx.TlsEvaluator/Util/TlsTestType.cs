@@ -16,6 +16,8 @@
         TlsWeakCipherSuitesRejected = 12,
         Tls10Available = 13,
         Tls11Available = 14,
-        Tls12Available = 15
+        Tls12Available = 15,
+        Tls13Available = 16,
+        Tls13AvailableWithBestCipherSuiteSelected = 17,
     }
 }

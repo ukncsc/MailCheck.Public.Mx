@@ -1,11 +1,15 @@
-﻿using MailCheck.Common.Messaging.Abstractions;
+﻿using System.Collections.Generic;
+using MailCheck.Common.Messaging.Abstractions;
 
 namespace MailCheck.Mx.Contracts.Entity
 {
     public class MxHostTestPending : Message
     {
-        public MxHostTestPending(string id) : base(id)
+        public List<string> IpAddresses { get; private set; }
+
+        public MxHostTestPending(string id, List<string> ipAddresses) : base(id)
         {
+            IpAddresses = ipAddresses;
         }
     }
 }

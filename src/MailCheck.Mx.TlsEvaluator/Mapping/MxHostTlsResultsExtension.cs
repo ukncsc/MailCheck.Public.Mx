@@ -22,7 +22,8 @@ namespace MailCheck.Mx.TlsEvaluator.Mapping
                 tlsTestResults.Ssl3FailsWithBadCipherSuite,
                 tlsTestResults.TlsSecureEllipticCurveSelected,
                 tlsTestResults.TlsSecureDiffieHellmanGroupSelected,
-                tlsTestResults.TlsWeakCipherSuitesRejected);
+                tlsTestResults.TlsWeakCipherSuitesRejected,
+                tlsTestResults.Tls13AvailableWithBestCipherSuiteSelected);
         }
     }
 }

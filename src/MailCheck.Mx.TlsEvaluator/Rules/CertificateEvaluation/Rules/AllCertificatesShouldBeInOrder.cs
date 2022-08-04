@@ -8,6 +8,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class AllCertificatesShouldBeInOrder : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory AllCertificatesShouldBeInOrderFactory = 
+            new EvaluationErrorFactory("c7ea84ad-8d5f-4899-896e-f40a8a449bba", "mailcheck.tlsCert.allCertificatesShouldBeInOrder", EvaluationErrorType.Error );
+
         private readonly ILogger<AllCertificatesShouldBeInOrder> _log;
 
         public AllCertificatesShouldBeInOrder(ILogger<AllCertificatesShouldBeInOrder> log)
@@ -28,19 +31,13 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
                 {
                     if (currentIssuer.Trim().ToLower() != nextSubject.Trim().ToLower())
                     {
-                        error.Add(new EvaluationError(
-                            EvaluationErrorType.Error,
-                            CertificateEvaluatorErrors.AllCertificatesShouldBeInOrder));
-
+                        error.Add(AllCertificatesShouldBeInOrderFactory.Create(CertificateEvaluatorErrors.AllCertificatesShouldBeInOrder));
                         break;
                     }
                 }
                 else if (currentIssuer.Trim().ToLower() != hostCertificates.Certificates[i].Subject.Trim().ToLower())
                 {
-                    error.Add(new EvaluationError(
-                        EvaluationErrorType.Error,
-                        CertificateEvaluatorErrors.AllCertificatesShouldBeInOrder));
-
+                    error.Add(AllCertificatesShouldBeInOrderFactory.Create(CertificateEvaluatorErrors.AllCertificatesShouldBeInOrder));
                     break;
                 }
             }

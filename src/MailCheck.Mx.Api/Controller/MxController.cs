@@ -35,9 +35,25 @@ namespace MailCheck.Mx.Api.Controller
 
             DomainTlsEvaluatorResults result = await _mxService.GetDomainTlsEvaluatorResults(domainRequest.Domain);
 
-            return result == null 
-                ? NotFound(new ErrorResponse($"Domain {domainRequest.Domain} does not exist in Mail Check.")) 
+            return result == null
+                ? NotFound(new ErrorResponse($"Domain {domainRequest.Domain} does not exist in Mail Check."))
                 : new ObjectResult(result);
+        }
+
+        [HttpGet]
+        [Route("domain/{domain}/tls/recheck")]
+        [MailCheckAuthoriseRole(Role.Standard)]
+        public async Task<IActionResult> RecheckMx(DomainRequest domainRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                _log.LogWarning($"Bad request: {ModelState.GetErrorString()}");
+                return BadRequest(new ErrorResponse(ModelState.GetErrorString()));
+            }
+
+            await _mxService.RecheckTls(domainRequest.Domain);
+
+            return new OkObjectResult("{}");
         }
     }
 }

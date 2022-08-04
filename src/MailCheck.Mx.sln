@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2000
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30406.217
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2A5A2DB0-2B3E-4136-A3E2-9C8F2892A41B}"
 EndProject
@@ -35,6 +35,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailCheck.Mx.Contracts", "MailCheck.Mx.Contracts\MailCheck.Mx.Contracts.csproj", "{362A1F7B-C59C-43D7-8144-8BE20ED32562}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailCheck.Mx.BouncyCastle", "MailCheck.Mx.BouncyCastle\MailCheck.Mx.BouncyCastle.csproj", "{C2DDFA29-3300-49A8-9D85-D2103E5AF48D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailCheck.Mx.TlsTesterWatchdog", "MailCheck.Mx.TlsTesterWatchdog\MailCheck.Mx.TlsTesterWatchdog.csproj", "{ABA59842-E37D-4599-92B5-1808AE065BE2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailCheck.Mx.SimplifiedTlsTester", "MailCheck.Mx.SimplifiedTlsTester\MailCheck.Mx.SimplifiedTlsTester.csproj", "{3EED1D50-C457-41C2-9E87-08E16F7EBD31}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MailCheck.Mx.SimplifiedTlsTester.Test", "MailCheck.Mx.SimplifiedTlsTester.Test\MailCheck.Mx.SimplifiedTlsTester.Test.csproj", "{A9FEA55B-B421-4C63-BF46-1432598BBE60}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -102,6 +108,18 @@ Global
 		{C2DDFA29-3300-49A8-9D85-D2103E5AF48D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2DDFA29-3300-49A8-9D85-D2103E5AF48D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2DDFA29-3300-49A8-9D85-D2103E5AF48D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABA59842-E37D-4599-92B5-1808AE065BE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABA59842-E37D-4599-92B5-1808AE065BE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABA59842-E37D-4599-92B5-1808AE065BE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABA59842-E37D-4599-92B5-1808AE065BE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EED1D50-C457-41C2-9E87-08E16F7EBD31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EED1D50-C457-41C2-9E87-08E16F7EBD31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EED1D50-C457-41C2-9E87-08E16F7EBD31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EED1D50-C457-41C2-9E87-08E16F7EBD31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9FEA55B-B421-4C63-BF46-1432598BBE60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9FEA55B-B421-4C63-BF46-1432598BBE60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9FEA55B-B421-4C63-BF46-1432598BBE60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9FEA55B-B421-4C63-BF46-1432598BBE60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -122,6 +140,9 @@ Global
 		{CFE8AEED-0D10-47D8-9A87-51AF82121990} = {4FA4F4FE-4266-4779-B25D-6CEFEDA971DB}
 		{362A1F7B-C59C-43D7-8144-8BE20ED32562} = {2A5A2DB0-2B3E-4136-A3E2-9C8F2892A41B}
 		{C2DDFA29-3300-49A8-9D85-D2103E5AF48D} = {2A5A2DB0-2B3E-4136-A3E2-9C8F2892A41B}
+		{ABA59842-E37D-4599-92B5-1808AE065BE2} = {2A5A2DB0-2B3E-4136-A3E2-9C8F2892A41B}
+		{3EED1D50-C457-41C2-9E87-08E16F7EBD31} = {2A5A2DB0-2B3E-4136-A3E2-9C8F2892A41B}
+		{A9FEA55B-B421-4C63-BF46-1432598BBE60} = {4FA4F4FE-4266-4779-B25D-6CEFEDA971DB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B41E5623-8177-40E5-8674-3AFD3895968F}

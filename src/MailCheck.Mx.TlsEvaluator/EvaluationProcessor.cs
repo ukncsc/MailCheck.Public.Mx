@@ -40,20 +40,9 @@ namespace MailCheck.Mx.TlsEvaluator
 
         protected async Task<TlsResultsEvaluated> EvaluateMxRecordProfile(TlsTestResults tlsTestResults)
         {
-            List<BouncyCastleTlsTestResult> bouncyCastleTlsTestResults = new List<BouncyCastleTlsTestResult> {
-                tlsTestResults.Ssl3FailsWithBadCipherSuite,
-                tlsTestResults.Tls10AvailableWithBestCipherSuiteSelected,
-                tlsTestResults.Tls10AvailableWithWeakCipherSuiteNotSelected,
-                tlsTestResults.Tls11AvailableWithBestCipherSuiteSelected,
-                tlsTestResults.Tls11AvailableWithWeakCipherSuiteNotSelected,
-                tlsTestResults.Tls12AvailableWithBestCipherSuiteSelected,
-                tlsTestResults.Tls12AvailableWithBestCipherSuiteSelectedFromReverseList,
-                tlsTestResults.Tls12AvailableWithSha2HashFunctionSelected,
-                tlsTestResults.Tls12AvailableWithWeakCipherSuiteNotSelected,
-                tlsTestResults.TlsSecureDiffieHellmanGroupSelected,
-                tlsTestResults.TlsSecureEllipticCurveSelected,
-                tlsTestResults.TlsWeakCipherSuitesRejected
-            };
+            List<BouncyCastleTlsTestResult> bouncyCastleTlsTestResults = tlsTestResults
+                .EnumerateResults()
+                .ToList();
 
             bool hasFailedConnection = bouncyCastleTlsTestResults.All(_ =>
                 _.TlsError == TlsError.SESSION_INITIALIZATION_FAILED ||
@@ -118,7 +107,8 @@ namespace MailCheck.Mx.TlsEvaluator
         private static TlsResultsEvaluated CreateSingleTlsResult(string host, TlsEvaluatedResult tlsEvaluatedResult,
             TlsResults tlsResults) =>
             new TlsResultsEvaluated(host, tlsResults.Failed,
-                new TlsRecords(new TlsRecord(tlsEvaluatedResult, tlsResults.Tls12AvailableWithBestCipherSuiteSelected),
+                new TlsRecords(
+                    new TlsRecord(tlsEvaluatedResult, tlsResults.Tls12AvailableWithBestCipherSuiteSelected),
                     new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
                     new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
                     new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
@@ -132,6 +122,10 @@ namespace MailCheck.Mx.TlsEvaluator
                     new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
                     new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
                     new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
-                    new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS))));
+                    new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
+                    new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS)),
+                    new TlsRecord(new TlsEvaluatedResult(Guid.NewGuid(), EvaluatorResult.PASS))
+                )
+            );
     }
 }

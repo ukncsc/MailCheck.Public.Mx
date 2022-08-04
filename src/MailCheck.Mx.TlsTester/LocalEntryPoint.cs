@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -103,13 +104,16 @@ namespace MailCheck.Mx.TlsTester
 
         class ConsoleConfig : IMxTesterConfig, IBouncyCastleClientConfig
         {
-            public TimeSpan TlsConnectionTimeOut => TimeSpan.FromSeconds(5);
+            public TimeSpan TcpSendReceiveTimeout => TimeSpan.FromSeconds(5);
+            public TimeSpan TcpConnectionTimeout => TimeSpan.FromSeconds(5);
 
             public string SnsTopicArn => throw new NotImplementedException();
 
             public string SqsQueueUrl => throw new NotImplementedException();
 
             public string SmtpHostName => "gateway1.dev.mailcheck.service.ncsc.gov.uk";
+
+            public string[] TlsTesterIgnoredHosts => new string[]{};
 
             public int BufferSize => throw new NotImplementedException();
 

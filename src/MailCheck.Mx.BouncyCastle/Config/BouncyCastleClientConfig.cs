@@ -4,6 +4,7 @@ namespace MailCheck.Mx.BouncyCastle.Config
 {
     public interface IBouncyCastleClientConfig
     {
-        TimeSpan TlsConnectionTimeOut { get; }
+        TimeSpan TcpSendReceiveTimeout { get; }
+        TimeSpan TcpConnectionTimeout { get; }
     }
 }

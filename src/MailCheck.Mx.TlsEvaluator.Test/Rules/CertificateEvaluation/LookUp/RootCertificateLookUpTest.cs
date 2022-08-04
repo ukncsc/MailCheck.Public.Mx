@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FakeItEasy;
 using MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.LookUp;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using X509Certificate = MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Domain.X509Certificate;
 
@@ -14,13 +15,15 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.LookUp
         private RootCertificateLookUp _rootCertificateLookUp;
         private IRootCertificateProvider _rootCertificateProvider;
         private IClock _clock;
+        private ILogger<RootCertificateLookUp> _logger;
 
         [SetUp]
         public void SetUp()
         {
             _rootCertificateProvider = A.Fake<IRootCertificateProvider>();
             _clock = A.Fake<IClock>();
-            _rootCertificateLookUp = new RootCertificateLookUp(_rootCertificateProvider, _clock);
+            _logger = A.Fake<ILogger<RootCertificateLookUp>>();
+            _rootCertificateLookUp = new RootCertificateLookUp(_rootCertificateProvider, _clock, _logger);
         }
 
         [Test]

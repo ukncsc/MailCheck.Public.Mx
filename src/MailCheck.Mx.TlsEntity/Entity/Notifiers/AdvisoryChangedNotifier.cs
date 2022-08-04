@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MailCheck.Common.Contracts.Advisories;
 using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Contracts.SharedDomain;
@@ -9,23 +10,22 @@ using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Entity.Notifications;
 using Microsoft.Extensions.Logging;
 using Message = MailCheck.Common.Messaging.Abstractions.Message;
-using MessageDisplay = MailCheck.Mx.Contracts.SharedDomain.MessageDisplay;
-using MessageType = MailCheck.Mx.Contracts.SharedDomain.MessageType;
+using MessageType = MailCheck.Common.Contracts.Advisories.MessageType;
 
 namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
 {
     public class AdvisoryChangedNotifier : IChangeNotifier
     {
-        private readonly IMessagePublisher _messagePublisher;
+        private readonly IMessageDispatcher _messageDispatcher;
         private readonly ITlsEntityConfig _tlsEntityConfig;
         private readonly ILogger<AdvisoryChangedNotifier> _log;
 
         public AdvisoryChangedNotifier(
-            IMessagePublisher publisher,
+            IMessageDispatcher messageDispatcher,
             ITlsEntityConfig tlsEntityConfig,
             ILogger<AdvisoryChangedNotifier> log)
         {
-            _messagePublisher = publisher;
+            _messageDispatcher = messageDispatcher;
             _tlsEntityConfig = tlsEntityConfig;
             _log = log;
         }
@@ -52,11 +52,11 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
 
                 Advisories<TlsEvaluatedResult> configAdvisories = new Advisories<TlsEvaluatedResult>(ExtractMessages(state?.TlsRecords), ExtractMessages(evaluationResult?.TlsRecords));
 
-                addedConfigAdvisories.AddRange(configAdvisories.Added.Select(x => new AdvisoryMessage(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
+                addedConfigAdvisories.AddRange(configAdvisories.Added.Select(x => AdvisoryFactory.Create(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
 
-                sustainedConfigAdvisories.AddRange(configAdvisories.Sustained.Select(x => new AdvisoryMessage(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
+                sustainedConfigAdvisories.AddRange(configAdvisories.Sustained.Select(x => AdvisoryFactory.Create(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
 
-                removedConfigAdvisories.AddRange(configAdvisories.Removed.Select(x => new AdvisoryMessage(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
+                removedConfigAdvisories.AddRange(configAdvisories.Removed.Select(x => AdvisoryFactory.Create(GetMessageTypeFromConfigMessage(x), x.Description)).ToList());
 
 
                 _log.LogInformation("Getting TLS certificate advisories.");
@@ -66,46 +66,46 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
                     evaluationResult?.Certificates?.Errors
                 );
 
-                addedCertAdvisories.AddRange(certAdvisories.Added.Select(x => new AdvisoryMessage(GetMessageTypeFromCertError(x), x.Message)).ToList());
+                addedCertAdvisories.AddRange(certAdvisories.Added.Select(x => AdvisoryFactory.Create(GetMessageTypeFromCertError(x), x.Message)).ToList());
 
-                sustainedCertAdvisories.AddRange(certAdvisories.Sustained.Select(x => new AdvisoryMessage(GetMessageTypeFromCertError(x), x.Message)).ToList());
+                sustainedCertAdvisories.AddRange(certAdvisories.Sustained.Select(x => AdvisoryFactory.Create(GetMessageTypeFromCertError(x), x.Message)).ToList());
 
-                removedCertAdvisories.AddRange(certAdvisories.Removed.Select(x => new AdvisoryMessage(GetMessageTypeFromCertError(x), x.Message)).ToList());
+                removedCertAdvisories.AddRange(certAdvisories.Removed.Select(x => AdvisoryFactory.Create(GetMessageTypeFromCertError(x), x.Message)).ToList());
 
 
                 if (addedConfigAdvisories.Any())
                 {
-                    domains.ForEach(x => _messagePublisher.Publish(new TlsAdvisoryAdded(x, host, addedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    domains.ForEach(x => _messageDispatcher.Dispatch(new TlsAdvisoryAdded(x, host, addedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
                     _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryAdded messages which contain {addedConfigAdvisories.Count} advisories");
                 }
 
                 if (sustainedConfigAdvisories.Any())
                 {
-                    domains.ForEach(x => _messagePublisher.Publish(new TlsAdvisorySustained(x, host, sustainedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    domains.ForEach(x => _messageDispatcher.Dispatch(new TlsAdvisorySustained(x, host, sustainedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
                     _log.LogInformation($"Dispatched {domains.Count} TlsAdvisorySustained messages which contain {sustainedConfigAdvisories.Count} advisories");
                 }
 
                 if (removedConfigAdvisories.Any())
                 {
-                    domains.ForEach(x => _messagePublisher.Publish(new TlsAdvisoryRemoved(x, host, removedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    domains.ForEach(x => _messageDispatcher.Dispatch(new TlsAdvisoryRemoved(x, host, removedConfigAdvisories), _tlsEntityConfig.SnsTopicArn));
                     _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryRemoved messages which contain {removedConfigAdvisories.Count} advisories");
                 }
 
                 if (addedCertAdvisories.Any())
                 {
-                    domains.ForEach(x => _messagePublisher.Publish(new TlsCertAdvisoryAdded(x, host, addedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    domains.ForEach(x => _messageDispatcher.Dispatch(new TlsCertAdvisoryAdded(x, host, addedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
                     _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryAdded messages which contain {addedCertAdvisories.Count} advisories");
                 }
 
                 if (sustainedCertAdvisories.Any())
                 {
-                    domains.ForEach(x => _messagePublisher.Publish(new TlsCertAdvisorySustained(x, host, sustainedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    domains.ForEach(x => _messageDispatcher.Dispatch(new TlsCertAdvisorySustained(x, host, sustainedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
                     _log.LogInformation($"Dispatched {domains.Count} TlsAdvisorySustained messages which contain {sustainedCertAdvisories.Count} advisories");
                 }
 
                 if (removedCertAdvisories.Any())
                 {
-                    domains.ForEach(x => _messagePublisher.Publish(new TlsCertAdvisoryRemoved(x, host, removedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
+                    domains.ForEach(x => _messageDispatcher.Dispatch(new TlsCertAdvisoryRemoved(x, host, removedCertAdvisories), _tlsEntityConfig.SnsTopicArn));
                     _log.LogInformation($"Dispatched {domains.Count} TlsAdvisoryRemoved messages which contain {removedCertAdvisories.Count} advisories");
                 }
             }
@@ -133,7 +133,7 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
                 switch (tlsEvaluatedResult.Result)
                 {
                     case EvaluatorResult.PASS:
-                        return MessageType.positive;
+                        return MessageType.success;
                     case EvaluatorResult.FAIL:
                         return MessageType.error;
                     case EvaluatorResult.WARNING:
@@ -162,6 +162,7 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
 
             return tlsRecords.Records
                 .Select(record => record.TlsEvaluatedResult)
+                .Where(tlsEvalResult => !string.IsNullOrWhiteSpace(tlsEvalResult.Description))
                 .Where(tlsEvalResult =>
                 {
                     var result = tlsEvalResult.Result;
@@ -171,23 +172,6 @@ namespace MailCheck.Mx.TlsEntity.Entity.Notifiers
                            result == EvaluatorResult.WARNING;
                 })
                 .ToList();
-        }
-    }
-
-    public class Advisories<T> where T : class
-    {
-        public List<T> Added { get; set; }
-        public List<T> Sustained { get; set; }
-        public List<T> Removed { get; set; }
-
-        public Advisories(IEnumerable<T> currentAdvisories, IEnumerable<T> newAdvisories)
-        {
-            currentAdvisories = currentAdvisories ?? Enumerable.Empty<T>();
-            newAdvisories = newAdvisories ?? Enumerable.Empty<T>();
-
-            Added = newAdvisories.Except(currentAdvisories).ToList();
-            Sustained = currentAdvisories.Intersect(newAdvisories).ToList();
-            Removed = currentAdvisories.Except(newAdvisories).ToList();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace MailCheck.Mx.Contracts.Entity
         
         public virtual TlsState TlsState { get; set; }
 
-        public virtual DateTime Created { get; }
+        public virtual DateTime Created { get; set; }
 
         public virtual CertificateResults CertificateResults { get; set; }
 

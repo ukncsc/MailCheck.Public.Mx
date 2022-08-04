@@ -136,7 +136,7 @@
     <value>The certificate {0} will expire on {1} and should be replaced.</value>
   </data>
   <data name="CertificateShouldMatchHostName" xml:space="preserve">
-    <value>The certificate {0} with subject alternative name: {1} does not match host {2}.</value>
+    <value>Certificate host mismatch. The certificate Subject Alternative Name does not match host {0}.</value>
   </data>
   <data name="HostShouldHaveCertificates" xml:space="preserve">
     <value>The host {0} does not have any certificates.</value>

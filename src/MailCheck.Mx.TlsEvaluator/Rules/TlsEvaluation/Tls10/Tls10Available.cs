@@ -40,7 +40,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls10
                 }
             }
 
-            return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS).ToTaskList();
+            return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.INFORMATIONAL).ToTaskList();
             
         }
 

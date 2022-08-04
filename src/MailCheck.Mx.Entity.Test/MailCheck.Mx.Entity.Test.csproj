@@ -1,27 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="FakeItEasy" Version="7.0.1" />
-    <PackageReference Include="MailCheck.Common.Api" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Data.Migration" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Environment" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Logging" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Messaging.Abstractions" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Translations" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.Api" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Data.Migration" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Environment" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Logging" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Messaging.Abstractions" Version="13.0.0" />
     <PackageReference Include="nunit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
-    <PackageReference Include="MailCheck.Common.Contracts" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Data" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Messaging" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.Util" Version="5.1.0" />
-    <PackageReference Include="MailCheck.Common.SSM" Version="5.1.0" />
+    <PackageReference Include="MailCheck.Common.Contracts" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Data" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Messaging" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.Util" Version="13.0.0" />
+    <PackageReference Include="MailCheck.Common.SSM" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>

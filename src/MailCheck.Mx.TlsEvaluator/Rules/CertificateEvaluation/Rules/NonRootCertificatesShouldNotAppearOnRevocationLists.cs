@@ -10,6 +10,11 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class NonRootCertificatesShouldNotAppearOnRevocationLists : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory NonRootCertificatesShouldNotAppearOnRevocationListsError = 
+            new EvaluationErrorFactory("9160f60a-e88f-4507-a0e9-ab5a671e08e7", "mailcheck.tlsCert.nonRootCertificatesShouldNotAppearOnRevocationListsError", EvaluationErrorType.Inconclusive);
+        private static readonly IEvaluationErrorFactory NonRootCertificatesShouldNotAppearOnRevocationListsRevoked = 
+            new EvaluationErrorFactory("1c483ee0-7554-43fe-a24f-74b9fa976232", "mailcheck.tlsCert.nonRootCertificatesShouldNotAppearOnRevocationListsRevoked", EvaluationErrorType.Error);
+
         private readonly IOcspValidator _ocspValidator;
         private readonly ICrlValidator _crlValidator;
         private readonly ILogger<NonRootCertificatesShouldNotAppearOnRevocationLists> _log;
@@ -50,7 +55,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
                     {
                         string errorMessage = $"OCSP Error: {ocspResult.ErrorMessage}{Environment.NewLine}CRL Error: {crlResult.ErrorMessage}";
 
-                        return new List<EvaluationError>{new EvaluationError(EvaluationErrorType.Inconclusive,
+                        return new List<EvaluationError>{NonRootCertificatesShouldNotAppearOnRevocationListsError.Create(
                             string.Format(CertificateEvaluatorErrors.NonRootCertificatesShouldNotAppearOnRevocationListsError,
                                 hostCertificates.Certificates[i-1].CommonName, Environment.NewLine, errorMessage))};
                     }
@@ -68,7 +73,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
                     string.Join(Environment.NewLine, result.RevocationInfos
                         .Select(_ => $"Revocation Date: {(_.RevocationTime.HasValue ? _.RevocationTime.Value.ToString("dd/MM/yyyy HH:mm") : "unknown")}, Revocation Reason: {_.RevocationReason ?? "unknown"}"));
 
-                return new EvaluationError(EvaluationErrorType.Error, string.Format(CertificateEvaluatorErrors.NonRootCertificatesShouldNotAppearOnRevocationListsRevoked,
+                return NonRootCertificatesShouldNotAppearOnRevocationListsRevoked.Create(string.Format(CertificateEvaluatorErrors.NonRootCertificatesShouldNotAppearOnRevocationListsRevoked,
                     certificate.CommonName, Environment.NewLine, revocationReasons));
             }
 

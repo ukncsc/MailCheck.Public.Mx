@@ -15,12 +15,10 @@ using MailCheck.Mx.TlsEntity.Entity.Notifiers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using System.Collections.Generic;
-using MailCheck.Common.Environment.FeatureManagement;
-using MailCheck.Mx.Contracts.SharedDomain;
 using MailCheck.Common.Messaging.Sns;
-using MailCheck.Mx.TlsEntity.Entity;
 using MailCheck.Mx.TlsEntity.Entity.EmailSecurity;
+using MailCheck.Common.Data;
+using MailCheck.Common.Processors.Notifiers;
 
 namespace MailCheck.Mx.TlsEntity.StartUp
 {
@@ -53,19 +51,20 @@ namespace MailCheck.Mx.TlsEntity.StartUp
                 .AddTransient<IMessagePublisher, SnsMessagePublisher>()
                 .AddTransient<ITlsEntityDao, TlsEntityDao>()
                 .AddTransient<ITlsEntityConfig, TlsEntityConfig>()
-                .AddTransient<IDomainStatusPublisher, DomainStatusPublisher>()
+                //.AddTransient<IDomainStatusPublisher, DomainStatusPublisher>()
+                .AddTransient<IDomainStatusPublisher, NullDomainStatusPublisher>()
                 .AddTransient<IDomainStatusEvaluator, DomainStatusEvaluator>()
                 .AddTransient<IEntityChangedPublisher, EntityChangedPublisher>()
-                .AddConditionally(
-                    "NewScheduler",
-                    featureActiveRegistrations =>
-                    {
-                        featureActiveRegistrations.AddTransient<TlsEntityNewScheduler>();
-                    },
-                    featureInactiveRegistrations =>
-                    {
-                        featureInactiveRegistrations.AddTransient<Entity.TlsEntity>();
-                    });
+                .AddTransient<Entity.TlsEntity>()
+                .AddTransient<Entity.SimplifiedTlsEntity>()
+                .AddTransient<ISimplifiedAdvisoryChangedNotifier<TlsFactory>, SimplifiedAdvisoryChangedNotifier<TlsFactory>>()
+                .AddTransient<ISimplifiedAdvisoryChangedNotifier<CertFactory>, SimplifiedAdvisoryChangedNotifier<CertFactory>>()
+                .AddTransient<ISimplifiedTlsEntityDao, SimplifiedTlsEntityDao>()
+                .AddTransient<ISimplifiedEntityChangedPublisher, SimplifiedEntityChangedPublisher>()
+                .AddTransient<ISimplifiedDomainStatusPublisher, SimplifiedDomainStatusPublisher>()
+                .AddTransient<IFindingsChangedNotifier, FindingsChangedNotifier>()
+                .AddTransient<ISimplifiedFindingsChangedNotifier, SimplifiedFindingsChangedNotifier>()
+                .AddSingleton<IDatabase, DefaultDatabase<MySqlProvider>>();
         }
     }
 }

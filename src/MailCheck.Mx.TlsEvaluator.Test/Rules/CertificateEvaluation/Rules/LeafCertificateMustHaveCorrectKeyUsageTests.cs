@@ -38,39 +38,35 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
             Assert.AreEqual(0, result.Result.Count);
         }
 
-        //TO DO: To be reintroduced once DMARC-2041 is implemented
-        //[Test]
-        //public void ItShouldHaveAnErrorForANonNullCurveOrGroupWithNoDigitalSignatureBit()
-        //{
-        //    var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
-        //        CreateCertificate("cert", true)), CreateSelectedCiphers(
-        //            new SelectedCipherSuite("TlsSecureDiffieHellmanGroupSelected", "TLS_DH_RSA_WITH_AES_128_GCM_SHA256"))));
+        [Test]
+        public void ItShouldHaveAnErrorForANonNullCurveOrGroupWithNoDigitalSignatureBit()
+        {
+            var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
+                CreateCertificate("cert", true)), CreateSelectedCiphers(
+                    new SelectedCipherSuite("TlsSecureDiffieHellmanGroupSelected", "TLS_DH_RSA_WITH_AES_128_GCM_SHA256"))));
 
-        //    Assert.AreEqual(1, result.Result.Count);
-        //}
+            Assert.AreEqual(1, result.Result.Count);
+        }
 
-        //TO DO: To be reintroduced once DMARC-2041 is implemented
-        //[Test]
-        //public void ItShouldHaveAnErrorForAnRsaCipherWithNoKeyEncipherment()
-        //{
-        //    var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
-        //        CreateCertificate("cert", true)), CreateSelectedCiphers(
-        //            new SelectedCipherSuite("Tls11AvailableWithBestCipherSuiteSelected", "TLS_RSA_WITH_DES_CBC_SHA"))));
+        [Test]
+        public void ItShouldHaveAnErrorForAnRsaCipherWithNoKeyEncipherment()
+        {
+            var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
+                CreateCertificate("cert", true)), CreateSelectedCiphers(
+                    new SelectedCipherSuite("Tls11AvailableWithBestCipherSuiteSelected", "TLS_RSA_WITH_DES_CBC_SHA"))));
 
-        //    Assert.AreEqual(1, result.Result.Count);
-        //}
+            Assert.AreEqual(1, result.Result.Count);
+        }
 
-        //TO DO: To be reintroduced once DMARC-2041 is implemented
-        //[Test]
-        //public void ItShouldHaveAnErrorForADiffieCipherWithNoKeyAgreement()
-        //{
-        //    var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
-        //        CreateCertificate("cert", true)), CreateSelectedCiphers(
-        //            new SelectedCipherSuite("Tls12AvailableWithSha2HashFunctionSelected", "TLS_DH_RSA_WITH_AES_128_GCM_SHA256"))));
+        [Test]
+        public void ItShouldHaveAnErrorForADiffieCipherWithNoKeyAgreement()
+        {
+            var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
+                CreateCertificate("cert", true)), CreateSelectedCiphers(
+                    new SelectedCipherSuite("Tls12AvailableWithSha2HashFunctionSelected", "TLS_DH_RSA_WITH_AES_128_GCM_SHA256"))));
 
-        //    Assert.AreEqual(1, result.Result.Count);
-        //}
-
+            Assert.AreEqual(1, result.Result.Count);
+        }
 
         [Test]
         public void ItShouldIgnoreTestsIfCipherSuiteNotAvailable()
@@ -117,18 +113,17 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
             Assert.AreEqual(0, result.Result.Count);
         }
 
-        //[Test]
-        //TO DO: To be reintroduced once DMARC-2041 is implemented
-        //public void ItShouldHaveMultipleErrorForADiffieCipherWithKeyAgreement()
-        //{
-        //    var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
-        //        CreateCertificate("cert", true)), CreateSelectedCiphers(
-        //            new SelectedCipherSuite("TlsSecureEllipticCurveSelected", "TLS_RSA_WITH_AES_128_GCM_SHA256"),
-        //            new SelectedCipherSuite("Tls11AvailableWithBestCipherSuiteSelected", "TLS_RSA_WITH_IDEA_CBC_SHA"),
-        //            new SelectedCipherSuite("Tls10AvailableWithBestCipherSuiteSelected", "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA"))));
+        [Test]
+        public void ItShouldHaveMultipleErrorForADiffieCipherWithKeyAgreement()
+        {
+            var result = sut.Evaluate(CreateHostCertificates("ncsc.gov.uk", CreateCertificates(
+                CreateCertificate("cert", true)), CreateSelectedCiphers(
+                    new SelectedCipherSuite("TlsSecureEllipticCurveSelected", "TLS_RSA_WITH_AES_128_GCM_SHA256"),
+                    new SelectedCipherSuite("Tls11AvailableWithBestCipherSuiteSelected", "TLS_RSA_WITH_IDEA_CBC_SHA"),
+                    new SelectedCipherSuite("Tls10AvailableWithBestCipherSuiteSelected", "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA"))));
 
-        //    Assert.AreEqual(3, result.Result.Count);
-        //}
+            Assert.AreEqual(3, result.Result.Count);
+        }
 
         [Test]
         public void ItShouldNotHaveAnyErrorsIfTheCertificatesHaveNoKeyUsage()

@@ -10,6 +10,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class LeafCertificateMustHaveCorrectKeyUsage : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory LeafCertificateMustHaveCorrectKeyUsageFactory =
+            new EvaluationErrorFactory("e2508dcf-05a6-439a-9466-c52df92b02e4", "mailcheck.tlsCert.leafCertificateMustHaveCorrectKeyUsage", EvaluationErrorType.Error);
+
         private ILogger<LeafCertificateMustHaveCorrectKeyUsage> _log;
 
         public LeafCertificateMustHaveCorrectKeyUsage(ILogger<LeafCertificateMustHaveCorrectKeyUsage> log)
@@ -29,36 +32,30 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 
                 if (curveOrGroupCipherSuite != null && !leafCertificate.KeyUsageIncludesDigitalSignature)
                 {
-                    //TO DO: To be reintroduced once DMARC-2041 is implemented
-                    //errors.Add(new EvaluationError(
-                    //    EvaluationErrorType.Error,
-                    //    $"The mail server supports the cipher suite {curveOrGroupCipherSuite}. " +
-                    //    "This requires a digital signature but the certificate does not have permission to do this " +
-                    //    "(the digitalSignature bit within the Key Usage extension of the certificate is not set.)"));
+                    errors.Add(LeafCertificateMustHaveCorrectKeyUsageFactory.Create(
+                        $"The mail server supports the cipher suite {curveOrGroupCipherSuite}. " +
+                        "This requires a digital signature but the certificate does not have permission to do this " +
+                        "(the digitalSignature bit within the Key Usage extension of the certificate is not set.)"));
                 }
 
                 string rsaCipherSuite = GetCipherSuite(hostCertificates.SelectedCipherSuites, "TLS_RSA");
 
                 if (rsaCipherSuite != null && !leafCertificate.KeyUsageIncludesKeyEncipherment)
                 {
-                    //TO DO: To be reintroduced once DMARC-2041 is implemented
-                    //errors.Add(new EvaluationError(
-                    //    EvaluationErrorType.Error,
-                    //    $"The mail server supports the cipher suite {rsaCipherSuite}. " +
-                    //    "RSA requires Key Encipherment but the certificate does not have permission to do this " +
-                    //    "(the keyEncipherment bit within the Key Usage extension is not set.)"));
+                    errors.Add(LeafCertificateMustHaveCorrectKeyUsageFactory.Create(
+                        $"The mail server supports the cipher suite {rsaCipherSuite}. " +
+                        "RSA requires Key Encipherment but the certificate does not have permission to do this " +
+                        "(the keyEncipherment bit within the Key Usage extension is not set.)"));
                 }
 
                 string dhCipherSuite = GetCipherSuite(hostCertificates.SelectedCipherSuites, "TLS_DH_");
 
                 if (dhCipherSuite != null && !leafCertificate.KeyUsageIncludesKeyAgreement)
                 {
-                    //TO DO: To be reintroduced once DMARC-2041 is implemented
-                    //errors.Add(new EvaluationError(
-                    //    EvaluationErrorType.Error,
-                    //    $"The mail server supports the cipher suite {dhCipherSuite}. " +
-                    //    "The certificate does not have permission to do a Diffie-Hellman key agreement " +
-                    //    "(the keyAgreement bit in the Key Usage extension is not set)."));
+                    errors.Add(LeafCertificateMustHaveCorrectKeyUsageFactory.Create(
+                        $"The mail server supports the cipher suite {dhCipherSuite}. " +
+                        "The certificate does not have permission to do a Diffie-Hellman key agreement " +
+                        "(the keyAgreement bit in the Key Usage extension is not set)."));
                 }
             }
 

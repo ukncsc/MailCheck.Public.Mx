@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Linq;
-using MailCheck.Mx.TlsTester.Domain;
+﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
 namespace MailCheck.Mx.TlsTester.MxTester
@@ -25,22 +22,23 @@ namespace MailCheck.Mx.TlsTester.MxTester
 
         public bool Reserve(string host)
         {
-            _log.LogDebug($"Attempting to add reservation for host: {host}");
+            _log.LogInformation($"Attempting to add reservation for host: {host}");
             bool result = _filterItems.TryAdd(host, null);
+
             if (result)
             {
-                _log.LogDebug($"Reservation added for host: {host}");
+                _log.LogInformation($"Reservation added for host: {host}");
             }
             else
             {
-                _log.LogDebug($"Reservation already held by another processor for host: {host}");
+                _log.LogInformation($"Reservation already held by another processor for host: {host}");
             }
             return result;
         }
 
         public void ReleaseReservation(string host)
         {
-            _log.LogDebug($"Releasing reservation for host: {host}");
+            _log.LogInformation($"Releasing reservation for host: {host}");
             _filterItems.TryRemove(host, out string value);
         }
 

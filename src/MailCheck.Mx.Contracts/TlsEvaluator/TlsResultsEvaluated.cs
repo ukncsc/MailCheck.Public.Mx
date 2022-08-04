@@ -14,6 +14,6 @@ namespace MailCheck.Mx.Contracts.TlsEvaluator
 
         public CertificateResults Certificates { get; }
         public bool Failed { get; }
-        public TlsRecords TlsRecords { get; }
+        public TlsRecords TlsRecords { get; set; }
     }
 }

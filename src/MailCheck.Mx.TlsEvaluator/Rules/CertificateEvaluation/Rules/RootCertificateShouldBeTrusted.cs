@@ -9,6 +9,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class RootCertificateShouldBeTrusted : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory RootCertificateShouldBeTrustedFactory = 
+            new EvaluationErrorFactory("b2ccfebc-3339-4ad4-be54-fe1311f034f7", "mailcheck.tlsCert.rootCertificateShouldBeTrusted", EvaluationErrorType.Error);
+
         private readonly IRootCertificateLookUp _rootCertificateLookUp;
         private readonly ILogger<RootCertificateShouldBeTrusted> _log;
 
@@ -25,7 +28,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
                 .GetCertificate(hostCertificates.Certificates.Last().Issuer);
 
             return trustedRootCertificate == null 
-                ? new List<EvaluationError>{new EvaluationError(EvaluationErrorType.Error, string.Format(CertificateEvaluatorErrors.RootCertificateShouldBeTrusted, hostCertificates.Certificates.Last().CommonName))}
+                ? new List<EvaluationError>{ RootCertificateShouldBeTrustedFactory.Create(string.Format(CertificateEvaluatorErrors.RootCertificateShouldBeTrusted, hostCertificates.Certificates.Last().CommonName))}
                 : new List<EvaluationError>();
         }
 

@@ -26,9 +26,11 @@ namespace MailCheck.Mx.TlsEvaluator.Test
                 SetupConnectionResult(data, TlsTestType.Tls10AvailableWithBestCipherSuiteSelected),
                 SetupConnectionResult(data, TlsTestType.Tls10AvailableWithWeakCipherSuiteNotSelected),
                 SetupConnectionResult(data, TlsTestType.Ssl3FailsWithBadCipherSuite),
-                SetupConnectionResult(data, TlsTestType.TlsSecureEllipticCurveSelected),
+                null,
                 SetupConnectionResult(data, TlsTestType.TlsSecureDiffieHellmanGroupSelected),
-                SetupConnectionResult(data, TlsTestType.TlsWeakCipherSuitesRejected), null);
+                SetupConnectionResult(data, TlsTestType.TlsWeakCipherSuitesRejected),
+                SetupConnectionResult(data, TlsTestType.Tls13AvailableWithBestCipherSuiteSelected),
+                null);
         }
 
         public static TlsTestResults CreateMxHostTlsResults(TlsTestType testType, BouncyCastleTlsTestResult data)
@@ -52,12 +54,13 @@ namespace MailCheck.Mx.TlsEvaluator.Test
                     TlsTestType.Tls10AvailableWithWeakCipherSuiteNotSelected),
                 SetupConnectionResult(new Dictionary<TlsTestType, BouncyCastleTlsTestResult> {{testType, data}},
                     TlsTestType.Ssl3FailsWithBadCipherSuite),
-                SetupConnectionResult(new Dictionary<TlsTestType, BouncyCastleTlsTestResult> {{testType, data}},
-                    TlsTestType.TlsSecureEllipticCurveSelected),
+                null,
                 SetupConnectionResult(new Dictionary<TlsTestType, BouncyCastleTlsTestResult> {{testType, data}},
                     TlsTestType.TlsSecureDiffieHellmanGroupSelected),
                 SetupConnectionResult(new Dictionary<TlsTestType, BouncyCastleTlsTestResult> {{testType, data}},
                     TlsTestType.TlsWeakCipherSuitesRejected),
+                SetupConnectionResult(new Dictionary<TlsTestType, BouncyCastleTlsTestResult> { { testType, data } },
+                    TlsTestType.Tls13AvailableWithBestCipherSuiteSelected),
                 null);
         }
     }

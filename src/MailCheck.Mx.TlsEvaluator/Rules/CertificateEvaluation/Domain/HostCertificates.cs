@@ -22,4 +22,16 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Domain
 
         public List<SelectedCipherSuite> SelectedCipherSuites { get; }
     }
+
+    public class HostCertificatesWithName
+    {
+        public HostCertificatesWithName(string hostname, HostCertificates hostCertificates)
+        {
+            Hostname = hostname;
+            HostCertificates = hostCertificates;
+        }
+
+        public string Hostname { get; }
+        public HostCertificates HostCertificates { get; }
+    }
 }

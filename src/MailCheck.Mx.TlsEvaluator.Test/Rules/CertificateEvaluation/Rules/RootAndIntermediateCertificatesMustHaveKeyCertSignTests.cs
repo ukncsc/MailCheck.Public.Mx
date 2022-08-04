@@ -58,12 +58,11 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
         }
 
         [Test]
-        public void ItShouldContainAnInconclusiveMessageForNoKeyUsageExtension()
+        public void NonRootCertsShouldContainAnInconclusiveMessageForNoKeyUsageExtension()
         {
             var hostCertificates = CreateHostCertificates("ncsc.gov.uk",
                 CreateCertificate("leaf", false),
-                CreateCertificate("intermediate1", false, false),
-                CreateCertificate("root", true));
+                CreateCertificate("intermediate1", false, false));
 
             var result = sut.Evaluate(hostCertificates).Result;
 
@@ -71,13 +70,26 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
             Assert.AreEqual(EvaluationErrorType.Inconclusive, result[0].ErrorType);
         }
 
-        private static X509Certificate CreateCertificate(string commonName, bool keyCertSign, bool hasKeyUsage = true)
+        [Test]
+        public void RootCertShouldNotContainAnInconclusiveMessageForNoKeyUsageExtension()
+        {
+            var hostCertificates = CreateHostCertificates("ncsc.gov.uk",
+                CreateCertificate("root", true, subject: "Issuer"));
+
+            var result = sut.Evaluate(hostCertificates).Result;
+
+            Assert.AreEqual(0, result.Count);
+        }
+
+        private static X509Certificate CreateCertificate(string commonName, bool keyCertSign, bool hasKeyUsage = true, string issuer = "Issuer", string subject = "Subject")
         {
             X509Certificate certificate = A.Fake<X509Certificate>();
 
             A.CallTo(() => certificate.CommonName).Returns(commonName);
             A.CallTo(() => certificate.KeyUsageIncludesKeyCertSign).Returns(keyCertSign);
             A.CallTo(() => certificate.HasKeyUsage).Returns(hasKeyUsage);
+            A.CallTo(() => certificate.Issuer).Returns(issuer);
+            A.CallTo(() => certificate.Subject).Returns(subject);
 
             return certificate;
         }

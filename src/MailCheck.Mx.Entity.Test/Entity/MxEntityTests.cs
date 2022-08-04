@@ -45,7 +45,7 @@ namespace MailCheck.Mx.Entity.Entity
         public async Task ShouldThrowWhenDomainCreatedReceivedAndDomainAlreadyExists()
         {
             string domainName = "testDomainName";
-            string snsTopicArn = "SnsTopicArn"; 
+            string snsTopicArn = "SnsTopicArn";
 
             A.CallTo(() => _dao.Get(domainName)).Returns(Task.FromResult(new MxEntityState("")));
 
@@ -69,7 +69,7 @@ namespace MailCheck.Mx.Entity.Entity
 
             A.CallTo(() => _dao.Save(A<MxEntityState>.That.Matches(state => state.MxState == MxState.Created))).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<MxEntityCreated>.That.Matches(entity => entity.Id == domainName.ToLower()), snsTopicArn)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == domainName.ToLower() && a.Service == "Mx" && a.ScheduledTime == DateTime.MinValue), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a => a.ResourceId == domainName.ToLower() && a.Service == "Mx" && a.ScheduledTime == default), snsTopicArn)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<EntityChanged>._, snsTopicArn)).MustHaveHappenedOnceExactly();
         }
 
@@ -206,25 +206,30 @@ namespace MailCheck.Mx.Entity.Entity
         }
 
         [Test]
-        public void ShouldThrowWhenMxRecordsPolledReceivedButDomainDoesNotExist()
+        public async Task ShouldDispatchDeleteScheduledReminderWhenDomainDeletedReceived()
         {
-            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult((MxEntityState)null));
+            string domainName = "testDomainName";
+            string hostName = "testHostName";
 
-            Assert.ThrowsAsync<MailCheckException>(async () =>
+            DomainDeleted message = new DomainDeleted(domainName);
+
+            MxEntityState stateFromDb = new MxEntityState(domainName.ToLower())
             {
-                await _mxEntity.Handle(new MxRecordsPolled("", new List<HostMxRecord>(), null));
-            });
+                MxState = MxState.Created,
+                HostMxRecords = new List<HostMxRecord>
+                {
+                    new HostMxRecord(hostName, 0, new List<string>())
+                }
+            };
+            A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
+            await _mxEntity.Handle(message);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<DeleteScheduledReminder>.That.Matches(_ =>
+                _.ResourceId == domainName.ToLower() && _.Service == "Mx"), A<string>._)).MustHaveHappenedOnceExactly();
         }
 
-        [TestCase(10)]
-        [TestCase(33)]
-        [TestCase(14400)]
-        [TestCase(10800)]
-        [TestCase(1234)]
-        [TestCase(1)]
-        [TestCase(19329)]
-        [TestCase(1000000)]
-        public async Task ShouldHandleChangeSaveAndDispatchWhenMxRecordsPolledReceived(int nextSchedule)
+        [Test]
+        public async Task ShouldHandleChangeSaveAndDispatchWhenMxRecordsPolledReceived()
         {
             string snsTopicArn = "SnsTopicArn";
             A.CallTo(() => _mxEntityConfig.SnsTopicArn).Returns(snsTopicArn);
@@ -233,8 +238,6 @@ namespace MailCheck.Mx.Entity.Entity
             MxEntityState stateFromDb = new MxEntityState(domainName.ToLower()) { MxState = MxState.Created };
             A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
 
-
-            A.CallTo(() => _mxEntityConfig.NextScheduledInSeconds).Returns(nextSchedule);
             A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.MinValue);
 
             MxRecordsPolled message = new MxRecordsPolled(domainName, new List<HostMxRecord>(), null) { Timestamp = DateTime.UnixEpoch };
@@ -248,11 +251,9 @@ namespace MailCheck.Mx.Entity.Entity
             A.CallTo(() => _changeNotifiersComposite.Handle(stateFromDb, message)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<MxRecordsUpdated>.That.Matches(a => a.Id == message.Id.ToLower() && a.Records.Count == 0), snsTopicArn)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch(A<CreateScheduledReminder>.That.Matches(a =>
+            A.CallTo(() => _dispatcher.Dispatch(A<ReminderSuccessful>.That.Matches(a =>
                 a.ResourceId == domainName.ToLower() &&
-                a.Service == "Mx" &&
-                a.ScheduledTime <= DateTime.MinValue.AddSeconds(nextSchedule) &&
-                a.ScheduledTime >= DateTime.MinValue.AddSeconds(nextSchedule * 0.75)), snsTopicArn)).MustHaveHappenedOnceExactly();
+                a.Service == "Mx"), snsTopicArn)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<EntityChanged>._, snsTopicArn)).MustHaveHappenedOnceExactly();
         }
 
@@ -297,7 +298,93 @@ namespace MailCheck.Mx.Entity.Entity
             A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<MxHostTestPending>.That.Matches(a => a.Id == hostName1.ToLower()), snsTopicArn)).MustNotHaveHappened();
             A.CallTo(() => _dispatcher.Dispatch(A<MxHostTestPending>.That.Matches(a => a.Id == hostName2.ToLower()), snsTopicArn)).MustHaveHappenedOnceExactly();
+        }
 
+        [Test]
+        public async Task ShouldDispatchReminderForIps()
+        {
+            string domainName = "test.gov.uk";
+            string hostName = "test-host-inbound2.com";
+
+            string snsTopicArn = "SnsTopicArn";
+            A.CallTo(() => _mxEntityConfig.SnsTopicArn).Returns(snsTopicArn);
+            string ipAddress1 = "ipaddress1";
+            string ipAddress2 = "ipaddress2";
+            List<string> ipAddresses = new List<string>() { ipAddress1, ipAddress2 };
+            List<HostMxRecord> hostMxRecords = new List<HostMxRecord>
+            {
+                new HostMxRecord(hostName, 0, ipAddresses),
+            };
+
+            MxEntityState stateFromDb = new MxEntityState(domainName.ToLower())
+            {
+                MxState = MxState.Created,
+                HostMxRecords = hostMxRecords,
+            };
+
+            A.CallTo(() => _dao.Get(domainName.ToLower())).Returns(Task.FromResult(stateFromDb));
+
+
+            A.CallTo(() => _mxEntityConfig.NextScheduledInSeconds).Returns(33);
+            A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.MinValue);
+
+            MxRecordsPolled message = new MxRecordsPolled(domainName, hostMxRecords, null) { Timestamp = DateTime.UnixEpoch };
+
+            await _mxEntity.Handle(message);
+
+            A.CallTo(() => _changeNotifiersComposite.Handle(stateFromDb, message)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<MxHostTestPending>.That.Matches(a => a.Id == hostName.ToLower() && a.IpAddresses == ipAddresses), snsTopicArn)).MustHaveHappenedOnceExactly();
+        }
+
+        [Test]
+        public void ShouldNotThrowForANonExistentEntityWhenHandlingDomainDeleted()
+        {
+            var domainDeleted = new DomainDeleted("ncsc.gov.uk");
+
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult<MxEntityState>(null));
+
+            Assert.DoesNotThrowAsync(async () =>
+            {
+                await _mxEntity.Handle(domainDeleted);
+            });
+
+            A.CallTo(() => _dao.Delete(A<string>._)).MustNotHaveHappened();
+            A.CallTo(() => _dao.DeleteHosts(A<List<string>>._)).MustNotHaveHappened();
+            A.CallTo(() => _dispatcher.Dispatch(A<Message>._, A<string>._)).MustNotHaveHappened();
+        }
+
+        [Test]
+        public void ShouldNotThrowForANonExistentEntityWhenHandlingMxScheduledReminder()
+        {
+            var domainReminder = new MxScheduledReminder("ncsc.gov.uk", "resource");
+
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult<MxEntityState>(null));
+
+            Assert.DoesNotThrowAsync(async () =>
+            {
+                await _mxEntity.Handle(domainReminder);
+            });
+
+            A.CallTo(() => _dao.UpdateState(A<string>._, A<MxState>._)).MustNotHaveHappened();
+            A.CallTo(() => _dispatcher.Dispatch(A<Message>._, A<string>._)).MustNotHaveHappened();
+        }
+
+        [Test]
+        public void ShouldNotThrowForANonExistentEntityWhenHandlingMxRecordsPolled()
+        {
+            var domainPolled = new MxRecordsPolled("ncsc.gov.uk", new List<HostMxRecord>(), null);
+
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult<MxEntityState>(null));
+
+            Assert.DoesNotThrowAsync(async () =>
+            {
+                await _mxEntity.Handle(domainPolled);
+            });
+
+            A.CallTo(() => _changeNotifiersComposite.Handle(A<MxEntityState>._, A<Message>._)).MustNotHaveHappened();
+            A.CallTo(() => _dao.Save(A<MxEntityState>._)).MustNotHaveHappened();
+            A.CallTo(() => _dispatcher.Dispatch(A<Message>._, A<string>._)).MustNotHaveHappened();
         }
     }
 }

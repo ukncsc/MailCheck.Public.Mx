@@ -25,6 +25,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
         private ITlsSecurityTesterAdapator _mxHostTester;
         private IMxTesterConfig _mxSecurityTesterConfig;
         private IMxSecurityProcessingFilter _processingFilter;
+        private IMxSecurityTesterIgnoredHostsFilter _ignoredHostsFilter;
         private IRecentlyProcessedLedger _recentlyProcessedLedger;
         private IHostClassifier _hostClassifier;
         private ILogger<MxSecurityTesterProcessor> _log;
@@ -42,6 +43,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             _mxHostTester = A.Fake<ITlsSecurityTesterAdapator>();
             _mxSecurityTesterConfig = A.Fake<IMxTesterConfig>();
             _processingFilter = A.Fake<IMxSecurityProcessingFilter>();
+            _ignoredHostsFilter = A.Fake<IMxSecurityTesterIgnoredHostsFilter>();
             _recentlyProcessedLedger = A.Fake<IRecentlyProcessedLedger>();
             _hostClassifier = A.Fake<IHostClassifier>();
             _log = A.Fake<ILogger<MxSecurityTesterProcessor>>();
@@ -62,6 +64,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 _mxHostTester,
                 _mxSecurityTesterConfig,
                 _processingFilter,
+                _ignoredHostsFilter,
                 _recentlyProcessedLedger,
                 _hostClassifier,
                 _log,
@@ -105,7 +108,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustNotHaveHappened();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task HostsAreProcessed()
         {
             var testPending = CreateMxHostTestPending();
@@ -189,7 +192,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _recentlyProcessedLedger.Set("host.domain1.gov.uk")).MustNotHaveHappened();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task HostAreProcessedAndRecentlyProcessedHostsAreNot()
         {
             TlsTestPending testPending1 = CreateMxHostTestPending(1);
@@ -274,7 +277,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustNotHaveHappened();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task MultipleHostsAreProcessed()
         {
             var testPending = CreateMxHostTestPending(1);
@@ -320,7 +323,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustHaveHappened(3, Times.Exactly);
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task MultipleHostsWithMultipleProcessorsAreProcessed()
         {
             A.CallTo(() => _mxSecurityTesterConfig.TlsTesterThreadCount)
@@ -331,6 +334,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
                 _mxHostTester,
                 _mxSecurityTesterConfig,
                 _processingFilter,
+                _ignoredHostsFilter,
                 _recentlyProcessedLedger,
                 _hostClassifier,
                 _log,
@@ -377,7 +381,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustHaveHappened(2, Times.Exactly);
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task FastAndSlowHostsAreProcessed()
         {
             var testPending = CreateMxHostTestPending(1);
@@ -426,7 +430,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation(A<string>._)).MustHaveHappened(2, Times.Exactly);
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task MultipleSlowHostsDoesNotPreventFastHostBeingProcessed()
         {
             var testPending = CreateMxHostTestPending(1);
@@ -482,7 +486,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation("host.domain3.gov.uk")).MustHaveHappenedOnceExactly();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task ExceptionOnTestDoesntPublishAndReleasesReservation()
         {
             var testPending = CreateMxHostTestPending();
@@ -521,7 +525,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task ExceptionOnPublishReleasesReservation()
         {
             var testPending = CreateMxHostTestPending();
@@ -561,7 +565,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task ExceptionOnDeleteMessageReleasesReservation()
         {
             var testPending = CreateMxHostTestPending();
@@ -603,7 +607,7 @@ namespace MailCheck.Mx.TlsTester.Test.MxTester
             A.CallTo(() => _processingFilter.ReleaseReservation("host.domain1.gov.uk")).MustHaveHappenedOnceExactly();
         }
 
-        [Test]
+        [Test, Ignore("Legacy tester deprecated")]
         public async Task ExceptionOnQueuePoll()
         {
             var testPending = CreateMxHostTestPending();

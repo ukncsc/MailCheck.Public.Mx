@@ -76,5 +76,11 @@ namespace MailCheck.Mx.TlsEntity.Dao {
                 return ResourceManager.GetString("GetDomainsFromMxHost", resourceCulture);
             }
         }
+        
+        public static string GetHostsStates {
+            get {
+                return ResourceManager.GetString("GetHostsStates", resourceCulture);
+            }
+        }
     }
 }

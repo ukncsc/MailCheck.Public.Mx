@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using MailCheck.Mx.Contracts.SharedDomain;
 
 namespace MailCheck.Mx.Contracts.Tester
@@ -8,8 +9,8 @@ namespace MailCheck.Mx.Contracts.Tester
         private TlsTestResults() : base(string.Empty) {}
 
         public TlsTestResults(string id,
-           bool failed,
-           bool hostNotFound,
+            bool failed,
+            bool hostNotFound,
             BouncyCastleTlsTestResult tls12AvailableWithBestCipherSuiteSelected,
             BouncyCastleTlsTestResult tls12AvailableWithBestCipherSuiteSelectedFromReverseList,
             BouncyCastleTlsTestResult tls12AvailableWithSha2HashFunctionSelected,
@@ -22,6 +23,7 @@ namespace MailCheck.Mx.Contracts.Tester
             BouncyCastleTlsTestResult tlsSecureEllipticCurveSelected,
             BouncyCastleTlsTestResult tlsSecureDiffieHellmanGroupSelected,
             BouncyCastleTlsTestResult tlsWeakCipherSuitesRejected,
+            BouncyCastleTlsTestResult tls13AvailableWithBestCipherSuiteSelected,
             List<string> certificates, 
             List<SelectedCipherSuite> selectedCipherSuites = null) : base(id)
         {
@@ -40,6 +42,7 @@ namespace MailCheck.Mx.Contracts.Tester
             TlsSecureEllipticCurveSelected = tlsSecureEllipticCurveSelected;
             TlsSecureDiffieHellmanGroupSelected = tlsSecureDiffieHellmanGroupSelected;
             TlsWeakCipherSuitesRejected = tlsWeakCipherSuitesRejected;
+            Tls13AvailableWithBestCipherSuiteSelected = tls13AvailableWithBestCipherSuiteSelected;
             SelectedCipherSuites = selectedCipherSuites;
             Certificates = certificates ?? new List<string>();
         }
@@ -55,9 +58,11 @@ namespace MailCheck.Mx.Contracts.Tester
         public BouncyCastleTlsTestResult Tls10AvailableWithBestCipherSuiteSelected { get; }
         public BouncyCastleTlsTestResult Tls10AvailableWithWeakCipherSuiteNotSelected { get; }
         public BouncyCastleTlsTestResult Ssl3FailsWithBadCipherSuite { get; }
+        [Obsolete]
         public BouncyCastleTlsTestResult TlsSecureEllipticCurveSelected { get; }
         public BouncyCastleTlsTestResult TlsSecureDiffieHellmanGroupSelected { get; }
         public BouncyCastleTlsTestResult TlsWeakCipherSuitesRejected { get; }
+        public BouncyCastleTlsTestResult Tls13AvailableWithBestCipherSuiteSelected { get; }
         public List<SelectedCipherSuite> SelectedCipherSuites { get; }
         public List<string> Certificates { get; }
 

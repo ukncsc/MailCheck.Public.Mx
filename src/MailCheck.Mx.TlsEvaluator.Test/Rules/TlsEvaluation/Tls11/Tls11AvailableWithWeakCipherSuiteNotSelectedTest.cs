@@ -70,7 +70,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls11
 
             Assert.That(evaluatorResults.Count, Is.EqualTo(1));
 
-            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.PASS);
+            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.INFORMATIONAL);
         }
 
         [Test]
@@ -116,7 +116,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls11
 
             Assert.That(evaluatorResults.Count, Is.EqualTo(1));
 
-            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.PASS);
+            Assert.AreEqual(evaluatorResults[0].TlsEvaluatedResult.Result, EvaluatorResult.INFORMATIONAL);
         }
 
         [Test]

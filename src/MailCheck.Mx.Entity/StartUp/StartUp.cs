@@ -28,22 +28,13 @@ namespace MailCheck.Mx.Entity.StartUp
                 .AddTransient<IEnvironment, EnvironmentWrapper>()
                 .AddTransient<IEnvironmentVariables, EnvironmentVariables>()
                 .AddSingleton<IAmazonSimpleSystemsManagement, CachingAmazonSimpleSystemsManagementClient>()
-                .AddTransient<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>() 
+                .AddTransient<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>()
                 .AddTransient<IMxEntityDao, MxEntityDao>()
                 .AddTransient<IMxEntityConfig, MxEntityConfig>()
                 .AddTransient<IChangeNotifiersComposite, ChangeNotifiersComposite>()
                 .AddTransient<IChangeNotifier, RecordChangedNotifier>()
                 .AddTransient<IEqualityComparer<HostMxRecord>, RecordEqualityComparer>()
-                .AddConditionally(
-                    "NewScheduler",
-                    featureActiveRegistrations =>
-                    {
-                        featureActiveRegistrations.AddTransient<MxEntityNewScheduler>();
-                    },
-                    featureInactiveRegistrations =>
-                    {
-                        featureInactiveRegistrations.AddTransient<MxEntity>();
-                    });
+                .AddTransient<MxEntity>();
         }
     }
 }

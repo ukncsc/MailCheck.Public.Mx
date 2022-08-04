@@ -5,16 +5,19 @@ namespace MailCheck.Mx.Contracts.SharedDomain
 {
     public class Error
     {
-        public Error(ErrorType errorType, string message)
+        public Error(ErrorType errorType, string message, string markdown)
         {
             ErrorType = errorType;
             Message = message;
+            Markdown = markdown;
         }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public ErrorType ErrorType { get; }
 
         public string Message { get; }
+
+        public string Markdown { get; }
 
         protected bool Equals(Error other)
         {

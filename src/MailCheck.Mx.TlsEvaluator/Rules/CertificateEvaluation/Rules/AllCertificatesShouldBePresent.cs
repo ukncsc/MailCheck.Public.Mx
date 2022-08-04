@@ -9,6 +9,8 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class AllCertificatesShouldBePresent : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory AllCertificatesShouldBePresentFactory = new EvaluationErrorFactory("678f5bb0-08ac-427b-a855-11c51338af7c", "mailcheck.tlsCert.allCertificatesShouldBePresent", EvaluationErrorType.Error);
+
         private readonly ILogger<AllCertificatesShouldBePresent> _log;
 
         public AllCertificatesShouldBePresent(ILogger<AllCertificatesShouldBePresent> log)
@@ -25,7 +27,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
             List<string> subjects = certificates.Certificates.Select(_ => _.Subject.Trim()).ToList();
 
             return Task.FromResult(issuers.Except(subjects, StringComparer.OrdinalIgnoreCase)
-                .Select(_ => new EvaluationError(EvaluationErrorType.Error, string.Format(CertificateEvaluatorErrors.AllCertificatesShouldBePresent, _)))
+                .Select(_ => AllCertificatesShouldBePresentFactory.Create(string.Format(CertificateEvaluatorErrors.AllCertificatesShouldBePresent, _)))
                 .ToList());
         }
 

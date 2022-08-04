@@ -8,6 +8,9 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
 {
     public class HostShouldHaveCertificates : IRule<HostCertificates>
     {
+        private static readonly IEvaluationErrorFactory HostShouldHaveCertificatesFactory = 
+            new EvaluationErrorFactory("1f52503b-6918-47b2-a2d7-9be46750c29a", "mailcheck.tlsCert.hostShouldHaveCertificates", EvaluationErrorType.Inconclusive);
+
         private readonly ILogger<HostShouldHaveCertificates> _log;
 
         public HostShouldHaveCertificates(ILogger<HostShouldHaveCertificates> log)
@@ -18,11 +21,11 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Rules
         public Task<List<EvaluationError>> Evaluate(HostCertificates hostCertificates)
         {
             _log.LogInformation("Running rule {RuleNumber}:{Rule} for host {Host}", SequenceNo, nameof(HostShouldHaveCertificates), hostCertificates.Host);
-            List<EvaluationError> evaluationErrors = hostCertificates.Certificates.Any()
+            List<EvaluationError> evaluationErrors = hostCertificates.Certificates?.Count > 0
                 ? new List<EvaluationError>()
                 : new List<EvaluationError>
                 {
-                    new EvaluationError(EvaluationErrorType.Inconclusive,
+                    HostShouldHaveCertificatesFactory.Create(
                         string.Format(CertificateEvaluatorErrors.HostShouldHaveCertificates, hostCertificates.Host))
                 };
 

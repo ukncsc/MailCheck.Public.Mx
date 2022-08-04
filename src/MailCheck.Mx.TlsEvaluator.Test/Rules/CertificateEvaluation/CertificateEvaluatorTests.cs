@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FakeItEasy;
 using MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation;
@@ -43,8 +44,8 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation
         {
             HostCertificates hostCertificates = A.Fake<HostCertificates>();
 
-            var evaluationError1 = new EvaluationError(EvaluationErrorType.Error, "Rule 1 Failed");
-            var evaluationError2 = new EvaluationError(EvaluationErrorType.Warning, "Rule 2 Failed");
+            var evaluationError1 = new EvaluationError(new Guid(), "mailcheck.tlsCert.testName1", EvaluationErrorType.Error, "Rule 1 Failed");
+            var evaluationError2 = new EvaluationError(new Guid(), "mailcheck.tlsCert.testName2", EvaluationErrorType.Warning, "Rule 2 Failed");
 
             A.CallTo(() => _rule1.Evaluate(hostCertificates)).Returns(new List<EvaluationError> { evaluationError1 } );
             A.CallTo(() => _rule2.Evaluate(hostCertificates)).Returns(new List<EvaluationError> { evaluationError2 } );
@@ -61,7 +62,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation
         {
             HostCertificates hostCertificates = A.Fake<HostCertificates>();
 
-            var evaluationError1 = new EvaluationError(EvaluationErrorType.Error, "Rule 1 Failed");
+            var evaluationError1 = new EvaluationError(new Guid(), "mailcheck.tlsCert.testName1", EvaluationErrorType.Error, "Rule 1 Failed");
 
             A.CallTo(() => _rule1.Evaluate(hostCertificates)).Returns(new List<EvaluationError> { evaluationError1 });
             A.CallTo(() => _rule2.Evaluate(hostCertificates)).Returns(new List<EvaluationError>());
@@ -77,8 +78,8 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation
         {
             HostCertificates hostCertificates = A.Fake<HostCertificates>();
 
-            var evaluationError1 = new EvaluationError(EvaluationErrorType.Error, "Rule 1 Failed");
-            var evaluationError2 = new EvaluationError(EvaluationErrorType.Warning, "Rule 2 Failed");
+            var evaluationError1 = new EvaluationError(new Guid(), "mailcheck.tlsCert.testName1", EvaluationErrorType.Error, "Rule 1 Failed");
+            var evaluationError2 = new EvaluationError(new Guid(), "mailcheck.tlsCert.testName2", EvaluationErrorType.Warning, "Rule 2 Failed");
 
             A.CallTo(() => _rule1.Evaluate(hostCertificates)).Returns(new List<EvaluationError> { evaluationError1 });
             A.CallTo(() => _rule1.IsStopRule).Returns(true);

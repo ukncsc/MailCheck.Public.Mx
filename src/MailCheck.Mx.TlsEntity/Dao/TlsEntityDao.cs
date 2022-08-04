@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using MySql.Data.MySqlClient;
 using MailCheck.Common.Data.Util;
 using Newtonsoft.Json;
 using MySqlHelper = MailCheck.Common.Data.Util.MySqlHelper;
+using MailCheck.Mx.Contracts.SharedDomain;
 
 namespace MailCheck.Mx.TlsEntity.Dao
 {
@@ -16,7 +18,7 @@ namespace MailCheck.Mx.TlsEntity.Dao
         Task<TlsEntityState> Get(string host);
         Task Save(TlsEntityState state);
         Task Delete(string host);
-        Task<Dictionary<string, List<TlsEntityState>>> GetDomains(string hostname);
+        Task<Dictionary<string, List<HostErrors>>> GetRelatedDomainsWithErrors(string hostname);
         Task<List<string>> GetDomainsFromHost(string hostname);
     }
 
@@ -86,11 +88,13 @@ namespace MailCheck.Mx.TlsEntity.Dao
             }
         }
 
-        public async Task<Dictionary<string, List<TlsEntityState>>> GetDomains(string hostname)
+        public async Task<Dictionary<string, List<HostErrors>>> GetRelatedDomainsWithErrors(string hostname)
         {
+            Dictionary<string, List<HostErrors>> domainHostErrors = new Dictionary<string, List<HostErrors>>();
+
             string connectionString = await _connectionInfo.GetConnectionStringAsync();
 
-            Dictionary<string, List<TlsEntityState>> results = new Dictionary<string, List<TlsEntityState>>();
+            Dictionary<string, List<string>> domainHosts = new Dictionary<string, List<string>>();
 
             using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
@@ -102,22 +106,25 @@ namespace MailCheck.Mx.TlsEntity.Dao
                     while (await reader.ReadAsync())
                     {
                         string domain = ReverseUrl(reader.GetString("domain"));
-                        TlsEntityState state = JsonConvert.DeserializeObject<TlsEntityState>(reader.GetString("state"));
-                        if (results.ContainsKey(domain))
+                        string reverseHost = reader.GetString("hostname");
+                        if (domainHosts.TryGetValue(domain, out List<string> associatedHosts))
                         {
-                            results[domain].Add(state);
+                            associatedHosts.Add(reverseHost);
                         }
                         else
                         {
-                            results[domain] = new List<TlsEntityState> {state};
+                            domainHosts[domain] = new List<string> {reverseHost};
                         }
                     }
                 }
+                List<string> distinctHostnames = domainHosts.Values.SelectMany(x => x).Distinct().ToList();
+                Dictionary<string, HostErrors> hostErrors = await GetErrorsFromHosts(connection, distinctHostnames);
+                domainHostErrors = domainHosts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Select(x => hostErrors[x]).ToList());
 
                 connection.Close();
             }
 
-            return results;
+            return domainHostErrors;
         }
 
         public async Task<List<string>> GetDomainsFromHost(string hostname)
@@ -141,6 +148,43 @@ namespace MailCheck.Mx.TlsEntity.Dao
                 }
 
                 connection.Close();
+            }
+
+            return results;
+        }
+
+        private async Task<Dictionary<string, HostErrors>> GetErrorsFromHosts(MySqlConnection connection, List<string> hostnames)
+        {
+            Dictionary<string, HostErrors> results = hostnames.ToDictionary(host => host, _ => new HostErrors());
+
+            string hostnamesString = null;
+            MySqlParameter[] hostParams = null;
+
+            if (hostnames != null && hostnames.Count > 0)
+            {
+                hostnamesString = string.Join(",", hostnames.Select((_, i) => $"@host{i}"));
+
+                hostParams = hostnames.Select((x, i) => new MySqlParameter($"@host{i}", x)).ToArray();
+            }
+            else
+            {
+                return results;
+            }
+
+            string commandText = string.Format(TlsEntityDaoResources.GetHostsStates, hostnamesString);
+
+            using (DbDataReader reader = await MySqlHelper.ExecuteReaderAsync(connection,
+                commandText, hostParams))
+            {
+                while (await reader.ReadAsync())
+                {
+                    string hostname = reader.GetString("hostname");
+                    string certErrorString = reader.GetString("certErrors");
+                    string configErrorString = reader.GetString("configErrors");
+
+                    results[hostname].CertErrors = certErrorString == null ? Array.Empty<Error>() : JsonConvert.DeserializeObject<Error[]>(certErrorString);
+                    results[hostname].ConfigErrors = configErrorString == null ? Array.Empty<EvaluatorResult?>() : JsonConvert.DeserializeObject<EvaluatorResult?[]>(configErrorString);
+                }
             }
 
             return results;

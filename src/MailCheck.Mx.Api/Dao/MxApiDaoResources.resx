@@ -118,19 +118,34 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="GetTlsEntityStates" xml:space="preserve">
-    <value>SELECT `TlsEntity`.`hostname`,
-    `TlsEntity`.`state`
+    <value>SELECT `TlsEntity`.`hostname`, `TlsEntity`.`state`
 FROM `mx`.`TlsEntity`
 WHERE `TlsEntity`.`hostname` IN ({0})
     </value>
   </data>
   <data name="GetMxRecords" xml:space="preserve">
-    <value>SELECT d.domain, d.mxState, h.hostMxRecord, d.lastUpdated, d.error FROM mx.MxRecord
+    <value>SELECT d.domain, d.mxState, h.hostMxRecord, d.lastUpdated, d.error 
+FROM mx.MxRecord
 JOIN MxHost h
 ON h.hostname = MxRecord.hostname
 JOIN Domain d
 ON d.domain = MxRecord.domain
 WHERE d.domain IN ({0});
+    </value>
+  </data>
+  <data name="GetSimplifiedTlsEntityStates" xml:space="preserve">
+    <value>SELECT hostEntity.hostname, hostEntity.ipAddress, ipEntity.json as ipJson, hostEntity.json as hostJson
+FROM MxRecord mr
+JOIN mx.SimplifiedTlsEntity hostEntity 
+  ON mr.hostname = hostEntity.hostname
+LEFT JOIN mx.SimplifiedTlsEntity ipEntity
+  ON hostEntity.ipAddress = ipEntity.ipAddress
+  AND ipEntity.hostname = '*'
+WHERE mr.domain = @domainId;
+    </value>
+  </data>
+  <data name="GetPreference" xml:space="preserve">
+    <value>SELECT hostname, preference FROM MxRecord where domain = @domainId;
     </value>
   </data>
 </root>

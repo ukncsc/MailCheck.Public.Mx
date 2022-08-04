@@ -29,7 +29,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Ssl3
                 case TlsError.HANDSHAKE_FAILURE:
                 case TlsError.PROTOCOL_VERSION:
                 case TlsError.INSUFFICIENT_SECURITY:
-                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS).ToTaskList();
+                    return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.INFORMATIONAL).ToTaskList();
 
                 case TlsError.TCP_CONNECTION_FAILED:
                 case TlsError.SESSION_INITIALIZATION_FAILED:

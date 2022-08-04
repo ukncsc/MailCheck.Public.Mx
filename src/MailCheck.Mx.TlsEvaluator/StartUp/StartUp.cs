@@ -22,6 +22,7 @@ using MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Ssl3;
 using MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls10;
 using MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls11;
 using MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls12;
+using MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls13;
 
 namespace MailCheck.Mx.TlsEvaluator.StartUp
 {
@@ -50,22 +51,25 @@ namespace MailCheck.Mx.TlsEvaluator.StartUp
                 .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult>, Tls12AvailableWithSha2HashFunctionSelected>()
                 .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult>, Tls12AvailableWithWeakCipherSuiteNotSelected>()
                 .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult>, TlsSecureDiffieHellmanGroupSelected>()
-                .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult >, TlsSecureEllipticCurveSelected>()
                 .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult>, TlsWeakCipherSuitesRejected>()
+                .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult>, Tls13Available>()
+                .AddTransient<IRule<TlsTestResults, RuleTypedTlsEvaluationResult>, Tls13AvailableWithBestCipherSuiteSelected>()
                 .AddTransient<IEvaluator<TlsTestResults, RuleTypedTlsEvaluationResult>, Evaluator<TlsTestResults, RuleTypedTlsEvaluationResult>>()
                 .AddTransient<IEvaluator<HostCertificates>, CertificateEvaluator>()
+                .AddTransient<IEvaluator<HostCertificatesWithName>, CertificateWithHostnameEvaluator>()
                 .AddTransient<IRule<HostCertificates>, AllCertificatesShouldBeInOrder>()
                 .AddTransient<IRule<HostCertificates>, AllCertificatesShouldBePresent>()
                 .AddTransient<IRule<HostCertificates>, AllCertificatesShouldHaveStrongKey>()
                 .AddTransient<IRule<HostCertificates>, AllCertificatesSignaturesShouldBeValid>()
                 .AddTransient<IRule<HostCertificates>, CertificateExpiryShouldBeInDate>()
-                .AddTransient<IRule<HostCertificates>, CertificateShouldMatchHostName>()
+                .AddTransient<IRule<HostCertificatesWithName>, CertificateShouldMatchHostName>()
                 .AddTransient<IRule<HostCertificates>, HostShouldHaveCertificates>()
                 .AddTransient<IRule<HostCertificates>, NonRootCertificatesShouldNotAppearOnRevocationLists>()
                 .AddTransient<IRule<HostCertificates>, RootCertificateShouldBeTrusted>()
                 .AddTransient<IRule<HostCertificates>, RootAndIntermediateCertificatesMustHaveKeyCertSign>()
                 .AddTransient<IRule<HostCertificates>, LeafCertificateMustHaveCorrectExtendedKeyUsage>()
-                .AddTransient<IRule<HostCertificates>, LeafCertificateMustHaveCorrectKeyUsage>()
+                //TO DO: To be reintroduced once DMARC-2041 is implemented
+                //.AddTransient<IRule<HostCertificates>, LeafCertificateMustHaveCorrectKeyUsage>()
                 .AddTransient<IOcspValidator, OcspValidator>()
                 .AddTransient<ICrlValidator, CrlValidator>()
                 .AddTransient<IPreprocessorComposite<HostCertificates>, CertificatePreprocessor>()
@@ -74,7 +78,8 @@ namespace MailCheck.Mx.TlsEvaluator.StartUp
                 .AddTransient<IClock, Clock>()
                 .AddSingleton<IRootCertificateLookUp, RootCertificateLookUp>()
                 .AddTransient<ICertificateEvaluatorHandler, CertificateEvaluatorHandler>()
-                .AddTransient<EvaluationHandler>();
+                .AddTransient<EvaluationHandler>()
+                .AddTransient<SimplifiedEvaluationHandler>();
         }
     }
 }

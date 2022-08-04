@@ -33,13 +33,18 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
             HostCertificates multipleSevenDaysFromToday = Create(Create("Certificate1", DateTime.UtcNow.AddDays(7)), Create("Certificate2", DateTime.UtcNow.AddDays(7)));
             HostCertificates mixOfExpiredAndExpiring = Create(Create("Certificate1", DateTime.UtcNow.AddDays(-1)), Create("Certificate2", DateTime.UtcNow.AddDays(7)));
 
-            yield return new TestCaseData(expiredDate).Returns(new List<EvaluationError> { new EvaluationError(EvaluationErrorType.Error, $"The certificate Certificate1 expired on {expiredDate.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
+            Guid guidExpired = new Guid("ff6971bd-a778-4b21-9b89-4244b20519c6");
+            Guid guidExpiresSoon = new Guid("11702da9-46b7-4892-b871-431dbf54342e");
+            string expiredName = "mailcheck.tlsCert.certificateExpiryShouldBeInDateExpired";
+            string expiresSoonName = "mailcheck.tlsCert.certificateExpiryShouldBeInDateExpiringSoon";
+
+            yield return new TestCaseData(expiredDate).Returns(new List<EvaluationError> { new EvaluationError(guidExpired, expiredName, EvaluationErrorType.Error, $"The certificate Certificate1 expired on {expiredDate.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
                 .SetName("Certificate expired 1 day ago - fails.");
 
-            yield return new TestCaseData(sevenDaysFromToday).Returns(new List<EvaluationError> { new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {sevenDaysFromToday.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
+            yield return new TestCaseData(sevenDaysFromToday).Returns(new List<EvaluationError> { new EvaluationError(guidExpiresSoon, expiresSoonName, EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {sevenDaysFromToday.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
                 .SetName("Certificate expires in 7 days - fails.");
 
-            yield return new TestCaseData(fourteenDaysFromToday).Returns(new List<EvaluationError> { new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate3 will expire on {fourteenDaysFromToday.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
+            yield return new TestCaseData(fourteenDaysFromToday).Returns(new List<EvaluationError> { new EvaluationError(guidExpiresSoon, expiresSoonName, EvaluationErrorType.Warning, $"The certificate Certificate3 will expire on {fourteenDaysFromToday.Certificates.First().ValidTo:dd/MM/yyyy HH:mm} and should be replaced.") })
                 .SetName("Certificate expires in 14 days - fails.");
             
             yield return new TestCaseData(fifteenDaysFromToday).Returns(new List<EvaluationError>())
@@ -50,22 +55,22 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.CertificateEvaluation.Rules
 
             yield return new TestCaseData(multipleExpiredDate).Returns(new List<EvaluationError>
                 {
-                    new EvaluationError(EvaluationErrorType.Error, $"The certificate Certificate1 expired on {multipleExpiredDate.Certificates[0].ValidTo:dd/MM/yyyy HH:mm} and should be replaced."),
-                    new EvaluationError(EvaluationErrorType.Error, $"The certificate Certificate2 expired on {multipleExpiredDate.Certificates[1].ValidTo:dd/MM/yyyy HH:mm} and should be replaced.")
+                    new EvaluationError(guidExpired, expiredName, EvaluationErrorType.Error, $"The certificate Certificate1 expired on {multipleExpiredDate.Certificates[0].ValidTo:dd/MM/yyyy HH:mm} and should be replaced."),
+                    new EvaluationError(guidExpired, expiredName, EvaluationErrorType.Error, $"The certificate Certificate2 expired on {multipleExpiredDate.Certificates[1].ValidTo:dd/MM/yyyy HH:mm} and should be replaced.")
                 })
                 .SetName("Multiple Certificates expired 1 day ago - fails.");
 
             yield return new TestCaseData(multipleSevenDaysFromToday).Returns(new List<EvaluationError>
                 {
-                    new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate1 will expire on {multipleSevenDaysFromToday.Certificates[0].ValidTo:dd/MM/yyyy HH:mm} and should be replaced."),
-                    new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {multipleSevenDaysFromToday.Certificates[1].ValidTo:dd/MM/yyyy HH:mm} and should be replaced.")
+                    new EvaluationError(guidExpiresSoon, expiresSoonName, EvaluationErrorType.Warning, $"The certificate Certificate1 will expire on {multipleSevenDaysFromToday.Certificates[0].ValidTo:dd/MM/yyyy HH:mm} and should be replaced."),
+                    new EvaluationError(guidExpiresSoon, expiresSoonName, EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {multipleSevenDaysFromToday.Certificates[1].ValidTo:dd/MM/yyyy HH:mm} and should be replaced.")
                 })
                 .SetName("Multiple Certificates expires in 7 days - fails.");
 
             yield return new TestCaseData(mixOfExpiredAndExpiring).Returns(new List<EvaluationError>
                 {
-                    new EvaluationError(EvaluationErrorType.Error, $"The certificate Certificate1 expired on {mixOfExpiredAndExpiring.Certificates[0].ValidTo:dd/MM/yyyy HH:mm} and should be replaced."),
-                    new EvaluationError(EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {mixOfExpiredAndExpiring.Certificates[1].ValidTo:dd/MM/yyyy HH:mm} and should be replaced.")
+                    new EvaluationError(guidExpired, expiredName, EvaluationErrorType.Error, $"The certificate Certificate1 expired on {mixOfExpiredAndExpiring.Certificates[0].ValidTo:dd/MM/yyyy HH:mm} and should be replaced."),
+                    new EvaluationError(guidExpiresSoon, expiresSoonName, EvaluationErrorType.Warning, $"The certificate Certificate2 will expire on {mixOfExpiredAndExpiring.Certificates[1].ValidTo:dd/MM/yyyy HH:mm} and should be replaced.")
                 })
                 .SetName("Mixed Certificates expired and expires in 7 days - fails.");
         }

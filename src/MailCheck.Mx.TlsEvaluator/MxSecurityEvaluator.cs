@@ -74,7 +74,12 @@ namespace MailCheck.Mx.TlsEvaluator
                     tlsTestResults.TlsWeakCipherSuitesRejected),
                 new TlsRecord(GetEvaluatorResultOrDefault(TlsTestType.Tls12Available, evaluationResultsByType)),
                 new TlsRecord(GetEvaluatorResultOrDefault(TlsTestType.Tls11Available, evaluationResultsByType)),
-                new TlsRecord(GetEvaluatorResultOrDefault(TlsTestType.Tls10Available, evaluationResultsByType))));
+                new TlsRecord(GetEvaluatorResultOrDefault(TlsTestType.Tls10Available, evaluationResultsByType)),
+                new TlsRecord(GetEvaluatorResultOrDefault(TlsTestType.Tls13Available, evaluationResultsByType)),
+                new TlsRecord(
+                    GetEvaluatorResultOrDefault(TlsTestType.Tls13AvailableWithBestCipherSuiteSelected,
+                        evaluationResultsByType), tlsTestResults.Tls13AvailableWithBestCipherSuiteSelected)
+            ));
         }
 
         private TlsEvaluatedResult GetEvaluatorResultOrDefault(TlsTestType tlsTestType, Dictionary<TlsTestType, RuleTypedTlsEvaluationResult> evaluationResultsByType)

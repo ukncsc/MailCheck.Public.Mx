@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleSystemsManagement;
@@ -8,8 +9,10 @@ using MailCheck.Common.Api.Authentication;
 using MailCheck.Common.Api.Authorisation.Service;
 using MailCheck.Common.Api.Middleware;
 using MailCheck.Common.Api.Middleware.Audit;
+using MailCheck.Common.Data;
 using MailCheck.Common.Data.Abstractions;
 using MailCheck.Common.Data.Implementations;
+using MailCheck.Common.Logging;
 using MailCheck.Common.Logging.Telemetry;
 using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.Common.Messaging.Sns;
@@ -31,6 +34,8 @@ using Microsoft.Extensions.HealthChecks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
+[assembly: InternalsVisibleTo("MailCheck.Mx.Api.Test")]
+
 namespace MailCheck.Mx.Api
 {
     public class StartUp
@@ -49,30 +54,32 @@ namespace MailCheck.Mx.Api
                 services.AddCors(CorsOptions);
             }
 
-            ServiceCollectionExtensions.AddLogging(services
-                    .AddHealthChecks(checks =>
-                        checks.AddValueTaskCheck("HTTP Endpoint", () =>
-                            new ValueTask<IHealthCheckResult>(HealthCheckResult.Healthy("Ok"))))
-                    .AddTransient<IConnectionInfoAsync, MySqlEnvironmentParameterStoreConnectionInfoAsync>()
-                    .AddSingleton<IAmazonSimpleSystemsManagement, CachingAmazonSimpleSystemsManagementClient>()
-                    .AddTransient<IDomainValidator, DomainValidator>()
-                    .AddTransient<IMessagePublisher, SnsMessagePublisher>()
-                    .AddTransient<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>()
-                    .AddTransient<IValidator<DomainRequest>, DomainRequestValidator>()
-                    .AddTransient<IMxService, MxService>()
-                    .AddTransient<IMxApiDao, MxApiDao>()
-                    .AddTransient<IDomainTlsEvaluatorResultsFactory, DomainTlsEvaluatorResultsFactory>()
-                    .AddTransient<IMxApiConfig, MxApiConfig>()
-                    .AddAudit("MX-Api")
-                    .AddMailCheckAuthenticationClaimsPrincipleClient())
-                    .AddMvc(config =>
+            services
+                .AddHealthChecks(checks =>
+                    checks.AddValueTaskCheck("HTTP Endpoint", () =>
+                        new ValueTask<IHealthCheckResult>(HealthCheckResult.Healthy("Ok"))))
+                .AddTransient<IConnectionInfoAsync, MySqlEnvironmentParameterStoreConnectionInfoAsync>()
+                .AddSingleton<IAmazonSimpleSystemsManagement, CachingAmazonSimpleSystemsManagementClient>()
+                .AddTransient<IDomainValidator, DomainValidator>()
+                .AddTransient<IMessagePublisher, SnsMessagePublisher>()
+                .AddTransient<IAmazonSimpleNotificationService, AmazonSimpleNotificationServiceClient>()
+                .AddTransient<IValidator<DomainRequest>, DomainRequestValidator>()
+                .AddTransient<IMxService, MxService>()
+                .AddTransient<IMxApiDao, MxApiDao>()
+                .AddTransient<IDomainTlsEvaluatorResultsFactory, DomainTlsEvaluatorResultsFactory>()
+                .AddTransient<IMxApiConfig, MxApiConfig>()
+                .AddSingleton<IDatabase, DefaultDatabase<MySqlProvider>>()
+                .AddAudit("MX-Api")
+                .AddMailCheckAuthenticationClaimsPrincipleClient()
+                .AddSerilogLogging()
+                .AddControllers(config =>
                 {
                     AuthorizationPolicy policy = new AuthorizationPolicyBuilder()
                         .RequireAuthenticatedUser()
                         .Build();
                     config.Filters.Add(new AuthorizeFilter(policy));
-                })
-                .AddJsonOptions(options =>
+                }).SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0)
+                .AddNewtonsoftJson(options =>
                 {
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
@@ -85,7 +92,7 @@ namespace MailCheck.Mx.Api
                 .AddMailCheckClaimsAuthentication();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             new TelemetryConfig()
                 .InstrumentAwsSdk()
@@ -103,7 +110,11 @@ namespace MailCheck.Mx.Api
                .UseAuthentication()
                .UseMiddleware<AuditLoggingMiddleware>()
                .UseMiddleware<UnhandledExceptionMiddleware>()
-               .UseMvc();
+               .UseRouting()
+               .UseEndpoints(endpoints => {
+                    endpoints.MapDefaultControllerRoute();
+                    endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+               });
         }
 
         private bool RunInDevMode()
@@ -116,7 +127,7 @@ namespace MailCheck.Mx.Api
         {
             options.AddPolicy(CorsPolicyName, builder =>
                 builder
-                    .AllowAnyOrigin()
+                    .SetIsOriginAllowed(_ => true)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials());

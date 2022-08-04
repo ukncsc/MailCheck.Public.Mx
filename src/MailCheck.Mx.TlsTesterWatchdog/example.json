@@ -1,0 +1,30 @@
+{
+  "AlarmName": "tf-prod-insights-read-latency",
+  "AlarmDescription": "Alarm when tf-prod-insights read latency exceeds 0.004 ",
+  "AWSAccountId": "727873987145",
+  "NewStateValue": "ALARM",
+  "NewStateReason": "Threshold Crossed: 1 out of the last 1 datapoints [0.01157619 (18/08/21 20:57:00)] was greater than or equal to the threshold (0.004) (minimum 1 datapoint for OK -> ALARM transition).",
+  "StateChangeTime": "2021-08-18T20:59:39.726+0000",
+  "Region": "EU (London)",
+  "AlarmArn": "arn:aws:cloudwatch:eu-west-2:727873987145:alarm:tf-prod-insights-read-latency",
+  "OldStateValue": "OK",
+  "Trigger": {
+    "MetricName": "ReadLatency",
+    "Namespace": "AWS/RDS",
+    "StatisticType": "Statistic",
+    "Statistic": "AVERAGE",
+    "Unit": null,
+    "Dimensions": [
+      {
+        "value": "tf-prod-insights",
+        "name": "DBInstanceIdentifier"
+      }
+    ],
+    "Period": 120,
+    "EvaluationPeriods": 1,
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "Threshold": 0.004,
+    "TreatMissingData": "- TreatMissingData:                    missing",
+    "EvaluateLowSampleCountPercentile": ""
+  }
+}

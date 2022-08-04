@@ -3,9 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.DomainStatus.Contracts;
-using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Contracts.SharedDomain;
-using MailCheck.Mx.Contracts.TlsEvaluator;
 using MailCheck.Mx.TlsEntity.Config;
 using MailCheck.Mx.TlsEntity.Dao;
 using Microsoft.Extensions.Logging;
@@ -14,7 +12,15 @@ namespace MailCheck.Mx.TlsEntity.Entity.DomainStatus
 {
     public interface IDomainStatusPublisher
     {
-        Task Publish(TlsResultsEvaluated message);
+        Task Publish(string host);
+    }
+
+    public class NullDomainStatusPublisher : IDomainStatusPublisher
+    {
+        public Task Publish(string host)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     public class DomainStatusPublisher : IDomainStatusPublisher
@@ -34,35 +40,27 @@ namespace MailCheck.Mx.TlsEntity.Entity.DomainStatus
             _log = log;
         }
 
-        public async Task Publish(TlsResultsEvaluated message)
+        public async Task Publish(string host)
         {
-            List<TlsEvaluatedResult> evaluatedResults =
-                message.TlsRecords?.Records?.Select(x => x.TlsEvaluatedResult).ToList();
-            List<Error> evaluatedCertificates = message.Certificates?.Errors;
+            Dictionary<string, List<HostErrors>> domainsWithHostsErrors = await _dao.GetRelatedDomainsWithErrors(host);
 
-            Dictionary<string, List<TlsEntityState>> domainsContainingHost = await _dao.GetDomains(message.Id);
-
-            foreach (string domain in domainsContainingHost.Keys)
+            foreach (KeyValuePair<string, List<HostErrors>> keyValuePair in domainsWithHostsErrors)
             {
-                List<TlsEntityState> existingHostStates = domainsContainingHost[domain];
-                List<TlsEvaluatedResult> existingResults = existingHostStates
-                    .Where(x => x.TlsRecords?.Records != null)
-                    .SelectMany(x => x.TlsRecords?.Records?.Select(y => y.TlsEvaluatedResult)).ToList();
+                string domain = keyValuePair.Key;
+                List<HostErrors> associatedHostsErrors = keyValuePair.Value;
 
-                List<Error> existingCertificates = existingHostStates
-                    .Where(x => x.CertificateResults?.Errors != null)
-                    .SelectMany(x => x.CertificateResults?.Errors).ToList();
+                List<EvaluatorResult?> existingResults = associatedHostsErrors
+                    .SelectMany(x => x.ConfigErrors).ToList();
 
-                existingResults.AddRange(evaluatedResults ?? new List<TlsEvaluatedResult>());
-
-                existingCertificates.AddRange(evaluatedCertificates ?? new List<Error>());
+                List<Error> existingCertificates = associatedHostsErrors
+                    .SelectMany(x => x.CertErrors).ToList();
 
                 Status status = _domainStatusEvaluator.GetStatus(existingResults, existingCertificates);
 
                 DomainStatusEvaluation domainStatusEvaluation = new DomainStatusEvaluation(domain, _tlsEntityConfig.RecordType, status);
 
                 _log.LogInformation(
-                    $"Publishing TLS domain status for domain {domain} because it contains mx host {message.Id} which was evaluated");
+                    $"Publishing TLS domain status for domain {domain} because it contains mx host {host} which was evaluated");
                 _dispatcher.Dispatch(domainStatusEvaluation, _tlsEntityConfig.SnsTopicArn);
             }
         }

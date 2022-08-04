@@ -12,4 +12,4 @@ In general, when running any project within MailCheck.Mx you should have the fol
 | NameServer | NameServer used in the Poller
 | AWS_REGION | aws datacentre region  |
 | AWS_ACCESS_KEY_ID |aws access key  |
-| AWS_SECRET_ACCESS_KEY |aws secret access key  |
+| AWS_SECRET_ACCESS_KEY |aws secret access key  | 

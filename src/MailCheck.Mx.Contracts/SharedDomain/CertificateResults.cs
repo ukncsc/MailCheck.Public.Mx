@@ -14,7 +14,7 @@ namespace MailCheck.Mx.Contracts.SharedDomain
 
         public List<Certificate> Certificates { get; }
 
-        public List<Error> Errors { get; }
+        public List<Error> Errors { get; set; }
 
         public bool Equals(CertificateResults other)
         {

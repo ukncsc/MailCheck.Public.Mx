@@ -41,7 +41,7 @@ namespace MailCheck.Mx.TlsEntity.Test.Entity.EmailSecurity
                 TlsState = TlsState.Evaluated,
                 CertificateResults = new CertificateResults(new List<Certificate>(), new List<Error>()),
                 FailureCount = 0,
-                LastUpdated = DateTime.Now,
+                LastUpdated = DateTime.UtcNow,
                 TlsRecords = new TlsRecords(null)
             };
             A.CallTo(() => _config.RecordType).Returns("TLS");

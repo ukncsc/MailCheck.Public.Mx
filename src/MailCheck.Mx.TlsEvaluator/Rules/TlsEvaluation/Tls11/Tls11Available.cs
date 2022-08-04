@@ -38,7 +38,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.TlsEvaluation.Tls11
                     .ToTaskList();
             }
 
-            return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.PASS).ToTaskList();
+            return new RuleTypedTlsEvaluationResult(tlsTestType, Guid.NewGuid(), EvaluatorResult.INFORMATIONAL).ToTaskList();
         }
 
         public int SequenceNo => 1;

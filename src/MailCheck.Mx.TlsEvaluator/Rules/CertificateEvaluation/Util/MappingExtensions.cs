@@ -39,7 +39,7 @@ namespace MailCheck.Mx.TlsEvaluator.Rules.CertificateEvaluation.Util
         public static List<Error> MapToErrors(this IEnumerable<EvaluationError> evaluationErrors)
         {
             return evaluationErrors
-                .Select(_ => new Error((ErrorType)_.ErrorType, _.Message))
+                .Select(_ => new Error((ErrorType)_.ErrorType, _.Message, _.Markdown))
                 .ToList();
         }
 

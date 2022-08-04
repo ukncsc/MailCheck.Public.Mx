@@ -10,11 +10,11 @@ using Newtonsoft.Json;
 using MailCheck.Common.Data.Abstractions;
 using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Contracts.Poller;
-using MailCheck.Common.Data.Util;
 using MailCheck.Mx.Contracts.SharedDomain;
 using MySqlHelper = MailCheck.Common.Data.Util.MySqlHelper;
 using MailCheck.Common.Data;
 using System.Text;
+using CommonDataUtil = MailCheck.Common.Data.Util.DbDataReaderExtensionMethods;
 
 namespace MailCheck.Mx.Entity.Dao
 {
@@ -116,13 +116,13 @@ namespace MailCheck.Mx.Entity.Dao
                 {
                     result = result ?? new MxEntityState(domain)
                     {
-                        Error = JsonConvert.DeserializeObject<Message>(reader.GetString("error")),
-                        LastUpdated = reader.GetDateTimeNullable("lastUpdated"),
-                        MxState = (MxState)reader.GetInt32("mxState"),
+                        Error = JsonConvert.DeserializeObject<Message>(CommonDataUtil.GetString(reader, "error")),
+                        LastUpdated = CommonDataUtil.GetDateTimeNullable(reader, "lastUpdated"),
+                        MxState = (MxState)CommonDataUtil.GetInt32(reader, "mxState"),
                         HostMxRecords = new List<HostMxRecord>()
                     };
 
-                    string hostMxRecord = reader.GetString("hostMxRecord");
+                    string hostMxRecord = CommonDataUtil.GetString(reader, "hostMxRecord");
                     if (!string.IsNullOrEmpty(hostMxRecord))
                     {
                         result.HostMxRecords.Add(JsonConvert.DeserializeObject<HostMxRecord>(hostMxRecord));
@@ -158,7 +158,7 @@ namespace MailCheck.Mx.Entity.Dao
             {
                 while (await reader.ReadAsync())
                 {
-                    hostnames.Add(ReverseUrl(reader.GetString("hostname")));
+                    hostnames.Add(ReverseUrl(CommonDataUtil.GetString(reader, "hostname")));
                 }
             }
 
@@ -269,4 +269,5 @@ namespace MailCheck.Mx.Entity.Dao
             }
         }
     }
+
 }

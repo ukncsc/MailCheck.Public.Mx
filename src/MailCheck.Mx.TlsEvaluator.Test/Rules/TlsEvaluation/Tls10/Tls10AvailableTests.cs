@@ -68,7 +68,7 @@ namespace MailCheck.Mx.TlsEvaluator.Test.Rules.TlsEvaluation.Tls10
                 await tls10Available.Evaluate(connectionTestResults);
 
             Assert.That(ruleTypedTlsEvaluationResults.Count, Is.EqualTo(1));
-            Assert.That(ruleTypedTlsEvaluationResults[0].TlsEvaluatedResult.Result, Is.EqualTo(EvaluatorResult.PASS));
+            Assert.That(ruleTypedTlsEvaluationResults[0].TlsEvaluatedResult.Result, Is.EqualTo(EvaluatorResult.INFORMATIONAL));
             Assert.That(ruleTypedTlsEvaluationResults[0].TlsEvaluatedResult.Description, Is.Null);
         }
     }
