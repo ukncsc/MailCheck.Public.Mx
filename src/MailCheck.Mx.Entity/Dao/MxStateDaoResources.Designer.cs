@@ -74,6 +74,26 @@ namespace MailCheck.Mx.Entity.Dao {
         
         /// <summary>
         ///   Looks up a localized string similar to 
+        ///DELETE FROM `mx`.`MxHost`
+        ///WHERE hostname IN (.
+        /// </summary>
+        public static string DeleteHosts {
+            get {
+                return ResourceManager.GetString("DeleteHosts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to @a{0}.
+        /// </summary>
+        public static string DeleteHostsValueFormatString {
+            get {
+                return ResourceManager.GetString("DeleteHostsValueFormatString", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 
         ///DELETE FROM `mx`.`MxRecord`
         ///WHERE domain = @domain;
         ///    .
@@ -81,6 +101,22 @@ namespace MailCheck.Mx.Entity.Dao {
         public static string DeleteMxRecord {
             get {
                 return ResourceManager.GetString("DeleteMxRecord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 
+        ///SELECT target.hostname
+        ///FROM `mx`.`MxRecord` target
+        ///WHERE target.domain = @domain
+        ///AND NOT EXISTS (SELECT * FROM `mx`.`MxRecord` others
+        ///  WHERE target.hostname = others.hostname
+        ///  AND others.domain != @domain)
+        ///    .
+        /// </summary>
+        public static string GetHostsUniqueToDomain {
+            get {
+                return ResourceManager.GetString("GetHostsUniqueToDomain", resourceCulture);
             }
         }
         
@@ -98,6 +134,20 @@ namespace MailCheck.Mx.Entity.Dao {
         public static string GetMxRecord {
             get {
                 return ResourceManager.GetString("GetMxRecord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 
+        ///SELECT hostEntity.ipAddress, hostEntity.json hostJson, ipAddressEntity.json ipAddressJson
+        ///FROM mx.SimplifiedTlsEntity hostEntity
+        ///JOIN mx.SimplifiedTlsEntity ipAddressEntity ON hostEntity.ipAddress = ipAddressEntity.ipAddress AND ipAddressEntity.hostname = &apos;*&apos;
+        ///WHERE hostEntity.hostname = @hostname
+        ///.
+        /// </summary>
+        public static string GetSimplifiedStates {
+            get {
+                return ResourceManager.GetString("GetSimplifiedStates", resourceCulture);
             }
         }
         
@@ -159,24 +209,6 @@ namespace MailCheck.Mx.Entity.Dao {
         public static string UpsertMxRecord {
             get {
                 return ResourceManager.GetString("UpsertMxRecord", resourceCulture);
-            }
-        }
-
-        public static string GetHostsUniqueToDomain {
-            get {
-                return ResourceManager.GetString("GetHostsUniqueToDomain", resourceCulture);
-            }
-        }
-        
-        public static string DeleteHosts {
-            get {
-                return ResourceManager.GetString("DeleteHosts", resourceCulture);
-            }
-        }
-        
-        public static string DeleteHostsValueFormatString {
-            get {
-                return ResourceManager.GetString("DeleteHostsValueFormatString", resourceCulture);
             }
         }
     }

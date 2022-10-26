@@ -1,17 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using MailCheck.Common.Contracts.Findings;
 using MailCheck.Common.Contracts.Messaging;
 using MailCheck.Common.Messaging.Abstractions;
-using MailCheck.Common.Messaging.Common.Exception;
 using MailCheck.Common.Util;
 using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Contracts.External;
 using MailCheck.Mx.Contracts.Poller;
+using MailCheck.Mx.Contracts.SharedDomain;
+using MailCheck.Mx.Contracts.Simplified;
 using MailCheck.Mx.Entity.Config;
 using MailCheck.Mx.Entity.Dao;
 using MailCheck.Mx.Entity.Entity.Notifiers;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Message = MailCheck.Common.Messaging.Abstractions.Message;
 
 namespace MailCheck.Mx.Entity.Entity
 {
@@ -27,6 +32,7 @@ namespace MailCheck.Mx.Entity.Entity
         private readonly IChangeNotifiersComposite _changeNotifiersComposite;
         private readonly IClock _clock;
         private readonly ILogger<MxEntity> _log;
+        private readonly IFindingFactory _findingFactory;
         private const string ServiceName = "Mx";
 
         public MxEntity(IMxEntityDao dao,
@@ -34,10 +40,12 @@ namespace MailCheck.Mx.Entity.Entity
             IMessageDispatcher dispatcher,
             IChangeNotifiersComposite changeNotifiersComposite,
             IClock clock,
+            IFindingFactory findingFactory,
             ILogger<MxEntity> log)
         {
             _dao = dao;
             _log = log;
+            _findingFactory = findingFactory;
             _clock = clock;
             _mxEntityConfig = mxEntityConfig;
             _dispatcher = dispatcher;
@@ -173,6 +181,7 @@ namespace MailCheck.Mx.Entity.Entity
             int newRecordCount = message.Records?.Count ?? 0;
 
             _changeNotifiersComposite.Handle(state, message);
+            await VerifySavedHosts(state, message);
 
             List<HostMxRecord> validHostRecords = new List<HostMxRecord>();
             if (message.Records != null)
@@ -190,11 +199,7 @@ namespace MailCheck.Mx.Entity.Entity
                 }
             }
 
-            if (message.Error == null)
-            {
-                state.HostMxRecords = validHostRecords;
-            }
-
+            state.HostMxRecords = validHostRecords;
             state.LastUpdated = message.Timestamp;
             state.Error = message.Error;
             state.MxState = MxState.Evaluated;
@@ -233,6 +238,52 @@ namespace MailCheck.Mx.Entity.Entity
             _dispatcher.Dispatch(entityChanged, _mxEntityConfig.SnsTopicArn);
             _log.LogInformation(
                 $"An EntityChanged message for Domain: {domainName} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
+        }
+
+        private async Task VerifySavedHosts(MxEntityState state, MxRecordsPolled polled)
+        {
+            string domain = state.Id;
+            IEnumerable<string> oldHostsForDomain = state.HostMxRecords?.Select(x => x.Id) ?? new List<string>();
+            IEnumerable<string> newHostsForDomain = polled.Records?.Select(x => x.Id) ?? new List<string>();
+
+            IEnumerable<string> removedHosts = oldHostsForDomain.Except(newHostsForDomain).ToList();
+
+            if (!removedHosts.Any())
+            {
+                _log.LogInformation($"Hosts remain the same for domain {domain}");
+                return;
+            }
+
+            List<Finding> findingsToRemove = new List<Finding>();
+            foreach (string removedHost in removedHosts)
+            {
+                _log.LogInformation($"Host {removedHost} removed for domain {domain}");
+                List<SimplifiedTlsEntityState> tlsEntityState = await _dao.GetSimplifiedStates(removedHost);
+
+                IEnumerable<NamedAdvisory> tlsAdvisories = tlsEntityState.SelectMany(x => x.TlsAdvisories ?? Enumerable.Empty<NamedAdvisory>());
+                IEnumerable<NamedAdvisory> certAdvisories = tlsEntityState.SelectMany(x => x.CertAdvisories ?? Enumerable.Empty<NamedAdvisory>());
+
+                IEnumerable<Finding> findings = tlsAdvisories.Concat(certAdvisories).Select(x => _findingFactory.Create(x, domain, removedHost));
+                findingsToRemove.AddRange(findings);
+            }
+
+            if (!findingsToRemove.Any())
+            {
+                _log.LogInformation($"No TLS findings to remove for {domain}");
+                return;
+            }
+
+            _log.LogInformation($"Hosts removed for domain {domain} - dispatching FindingsChanged with {findingsToRemove.Count} findings to remove: {Environment.NewLine}{JsonConvert.SerializeObject(findingsToRemove)}");
+
+            FindingsChanged cleanupMessage = new FindingsChanged(Guid.NewGuid().ToString())
+            {
+                Domain = domain,
+                RecordType = "TLS",
+                Removed = findingsToRemove
+            };
+
+            _dispatcher.Dispatch(cleanupMessage, _mxEntityConfig.SnsTopicArn);
+            _log.LogInformation($"A FindingsChanged message for Domain: {domain} has been dispatched to SnsTopic: {_mxEntityConfig.SnsTopicArn}");
         }
     }
 }

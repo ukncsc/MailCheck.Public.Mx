@@ -75,7 +75,7 @@ namespace MailCheck.Mx.TlsEntity.Entity
             _log.LogInformation($"A SimplfiedTlsTestPending message for ipAddress: {ipAddress} has been dispatched to SnsTopic: {_tlsEntityConfig.SnsTopicArn}");
 
             return Task.CompletedTask;
-        } 
+        }
 
         public class EntityPair
         {

@@ -201,4 +201,13 @@ WHERE hostname IN (</value>
   <data name="DeleteHostsValueFormatString" xml:space="preserve">
     <value>@a{0}</value>
   </data>
+
+  <data name="GetSimplifiedStates" xml:space="preserve">
+    <value>
+SELECT hostEntity.ipAddress, hostEntity.json hostJson, ipAddressEntity.json ipAddressJson
+FROM mx.SimplifiedTlsEntity hostEntity
+JOIN mx.SimplifiedTlsEntity ipAddressEntity ON hostEntity.ipAddress = ipAddressEntity.ipAddress AND ipAddressEntity.hostname = '*'
+WHERE hostEntity.hostname = @hostname
+</value>
+  </data>
 </root>

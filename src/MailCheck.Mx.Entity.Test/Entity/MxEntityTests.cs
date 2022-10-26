@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FakeItEasy;
+using MailCheck.Common.Contracts.Findings;
 using MailCheck.Common.Contracts.Messaging;
 using MailCheck.Common.Messaging.Abstractions;
 using MailCheck.Common.Messaging.Common.Exception;
@@ -9,11 +10,15 @@ using MailCheck.Common.Util;
 using MailCheck.Mx.Contracts.Entity;
 using MailCheck.Mx.Contracts.External;
 using MailCheck.Mx.Contracts.Poller;
+using MailCheck.Mx.Contracts.SharedDomain;
+using MailCheck.Mx.Contracts.Simplified;
 using MailCheck.Mx.Entity.Config;
 using MailCheck.Mx.Entity.Dao;
 using MailCheck.Mx.Entity.Entity.Notifiers;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
+using Message = MailCheck.Common.Messaging.Abstractions.Message;
+using MessageType = MailCheck.Common.Contracts.Advisories.MessageType;
 
 namespace MailCheck.Mx.Entity.Entity
 {
@@ -26,6 +31,7 @@ namespace MailCheck.Mx.Entity.Entity
         private IMessageDispatcher _dispatcher;
         private IChangeNotifiersComposite _changeNotifiersComposite;
         private IClock _clock;
+        private IFindingFactory _findingFactory;
         private ILogger<MxEntity> _log;
 
         [SetUp]
@@ -37,8 +43,9 @@ namespace MailCheck.Mx.Entity.Entity
             _mxEntityConfig = A.Fake<IMxEntityConfig>();
             _dispatcher = A.Fake<IMessageDispatcher>();
             _changeNotifiersComposite = A.Fake<IChangeNotifiersComposite>();
+            _findingFactory = A.Fake<IFindingFactory>();
 
-            _mxEntity = new MxEntity(_dao, _mxEntityConfig, _dispatcher, _changeNotifiersComposite, _clock, _log);
+            _mxEntity = new MxEntity(_dao, _mxEntityConfig, _dispatcher, _changeNotifiersComposite, _clock, _findingFactory, _log);
         }
 
         [Test]
@@ -240,17 +247,17 @@ namespace MailCheck.Mx.Entity.Entity
 
             A.CallTo(() => _clock.GetDateTimeUtc()).Returns(DateTime.MinValue);
 
-            MxRecordsPolled message = new MxRecordsPolled(domainName, new List<HostMxRecord>(), null) { Timestamp = DateTime.UnixEpoch };
+            MxRecordsPolled message = new MxRecordsPolled(domainName, new List<HostMxRecord>{new HostMxRecord("host.com",null,null)}, null) { Timestamp = DateTime.UnixEpoch };
 
             await _mxEntity.Handle(message);
 
             Assert.AreEqual(stateFromDb.MxState, MxState.Evaluated);
-            Assert.AreEqual(stateFromDb.HostMxRecords, message.Records);
+            Assert.AreSame(stateFromDb.HostMxRecords[0], message.Records[0]);
             Assert.AreEqual(stateFromDb.LastUpdated, message.Timestamp);
 
             A.CallTo(() => _changeNotifiersComposite.Handle(stateFromDb, message)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dao.Save(stateFromDb)).MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordsUpdated>.That.Matches(a => a.Id == message.Id.ToLower() && a.Records.Count == 0), snsTopicArn)).MustHaveHappenedOnceExactly();
+            A.CallTo(() => _dispatcher.Dispatch(A<MxRecordsUpdated>.That.Matches(a => a.Id == message.Id.ToLower() && a.Records.Count == 1), snsTopicArn)).MustHaveHappenedOnceExactly();
             A.CallTo(() => _dispatcher.Dispatch(A<ReminderSuccessful>.That.Matches(a =>
                 a.ResourceId == domainName.ToLower() &&
                 a.Service == "Mx"), snsTopicArn)).MustHaveHappenedOnceExactly();
@@ -385,6 +392,92 @@ namespace MailCheck.Mx.Entity.Entity
             A.CallTo(() => _changeNotifiersComposite.Handle(A<MxEntityState>._, A<Message>._)).MustNotHaveHappened();
             A.CallTo(() => _dao.Save(A<MxEntityState>._)).MustNotHaveHappened();
             A.CallTo(() => _dispatcher.Dispatch(A<Message>._, A<string>._)).MustNotHaveHappened();
+        }
+
+        [Test]
+        public async Task ShouldRemoveFindingsWhenHostsChange()
+        {
+            HostMxRecord hostMxRecord1 = new HostMxRecord("host1", 0, new List<string>());
+            HostMxRecord hostMxRecord2 = new HostMxRecord("host2", 0, new List<string>());
+            HostMxRecord hostMxRecord3 = new HostMxRecord("host3", 0, new List<string>());
+
+            List<HostMxRecord> oldRecords = new List<HostMxRecord> { hostMxRecord1, hostMxRecord2 };
+            List<HostMxRecord> newRecords = new List<HostMxRecord> { hostMxRecord2, hostMxRecord3 };
+
+            MxEntityState existingState = new MxEntityState("ncsc.gov.uk") { HostMxRecords = oldRecords};
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult(existingState));
+
+            NamedAdvisory host1TlsAdvisory = new NamedAdvisory(Guid.Empty, "host1TlsAdvisory", MessageType.error, null, null);
+            NamedAdvisory host1CertAdvisory = new NamedAdvisory(Guid.Empty, "host1CertAdvisory", MessageType.error, null, null);
+            Finding host1TlsFinding = new Finding { Name = "host1TlsFinding" };
+            Finding host1CertFinding = new Finding { Name = "host1CertFinding" };
+
+            A.CallTo(() => _findingFactory.Create(A<NamedAdvisory>.That.IsSameAs(host1TlsAdvisory), "ncsc.gov.uk", "host1")).Returns(host1TlsFinding);
+            A.CallTo(() => _findingFactory.Create(A<NamedAdvisory>.That.IsSameAs(host1CertAdvisory), "ncsc.gov.uk", "host1")).Returns(host1CertFinding);
+
+            SimplifiedTlsEntityState host1TlsEntityState = new SimplifiedTlsEntityState
+            {
+                TlsAdvisories = new List<NamedAdvisory> { host1TlsAdvisory },
+                CertAdvisories = new List<NamedAdvisory> { host1CertAdvisory }
+            };
+
+            A.CallTo(() => _dao.GetSimplifiedStates("host1"))
+                .Returns(Task.FromResult(new List<SimplifiedTlsEntityState> {host1TlsEntityState}));
+
+            MxRecordsPolled pollResult = new MxRecordsPolled("ncsc.gov.uk", newRecords, null);
+            await _mxEntity.Handle(pollResult);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<FindingsChanged>.That.Matches(
+                    x => x.Removed.Contains(host1TlsFinding) &&
+                         x.Removed.Contains(host1CertFinding) &&
+                         x.Domain == "ncsc.gov.uk"), A<string>._))
+                .MustHaveHappened();
+        }
+
+        [Test]
+        public async Task ShouldHandleEmptyAdvisoriesWhenRemovingFindings()
+        {
+            HostMxRecord hostMxRecord1 = new HostMxRecord("host1", 0, new List<string>());
+            HostMxRecord hostMxRecord2 = new HostMxRecord("host2", 0, new List<string>());
+            HostMxRecord hostMxRecord3 = new HostMxRecord("host3", 0, new List<string>());
+
+            List<HostMxRecord> oldRecords = new List<HostMxRecord> { hostMxRecord1, hostMxRecord2 };
+            List<HostMxRecord> newRecords = new List<HostMxRecord> { hostMxRecord2, hostMxRecord3 };
+
+            MxEntityState existingState = new MxEntityState("ncsc.gov.uk") { HostMxRecords = oldRecords };
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult(existingState));
+
+            SimplifiedTlsEntityState host1TlsEntityState = new SimplifiedTlsEntityState
+            {
+                TlsAdvisories = null,
+                CertAdvisories = null
+            };
+
+            A.CallTo(() => _dao.GetSimplifiedStates("host1"))
+                .Returns(Task.FromResult(new List<SimplifiedTlsEntityState> { host1TlsEntityState }));
+
+            MxRecordsPolled pollResult = new MxRecordsPolled("ncsc.gov.uk", newRecords, null);
+            await _mxEntity.Handle(pollResult);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<FindingsChanged>._, A<string>._)).MustNotHaveHappened();
+        }
+
+        [Test]
+        public async Task ShouldNotRemoveFindingsWhenHostsSame()
+        {
+            HostMxRecord hostMxRecord1 = new HostMxRecord("host1", 0, new List<string>());
+            HostMxRecord hostMxRecord2 = new HostMxRecord("host2", 0, new List<string>());
+
+            List<HostMxRecord> oldRecords = new List<HostMxRecord> { hostMxRecord1, hostMxRecord2 };
+            List<HostMxRecord> newRecords = new List<HostMxRecord> { hostMxRecord1, hostMxRecord2 };
+
+            MxEntityState existingState = new MxEntityState("ncsc.gov.uk") { HostMxRecords = oldRecords };
+            A.CallTo(() => _dao.Get(A<string>._)).Returns(Task.FromResult(existingState));
+
+            MxRecordsPolled pollResult = new MxRecordsPolled("ncsc.gov.uk", newRecords, null);
+            await _mxEntity.Handle(pollResult);
+
+            A.CallTo(() => _dispatcher.Dispatch(A<FindingsChanged>._, A<string>._)).MustNotHaveHappened();
         }
     }
 }

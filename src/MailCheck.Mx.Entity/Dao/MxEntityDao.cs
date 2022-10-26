@@ -14,6 +14,7 @@ using MailCheck.Mx.Contracts.SharedDomain;
 using MySqlHelper = MailCheck.Common.Data.Util.MySqlHelper;
 using MailCheck.Common.Data;
 using System.Text;
+using MailCheck.Mx.Contracts.Simplified;
 using CommonDataUtil = MailCheck.Common.Data.Util.DbDataReaderExtensionMethods;
 
 namespace MailCheck.Mx.Entity.Dao
@@ -182,6 +183,34 @@ namespace MailCheck.Mx.Entity.Dao
                 parameters.Add($"a{i}", ReverseUrl(hostnames[i]));
             }
             await _saveOperation(stringBuilder.ToString(), parameters);
+        }
+
+        public async Task<List<SimplifiedTlsEntityState>> GetSimplifiedStates(string hostName)
+        {
+            List<SimplifiedTlsEntityState> results = new List<SimplifiedTlsEntityState>();
+
+            using (MySqlConnection connection = await CreateAndOpenConnection())
+            using (DbDataReader reader = await MySqlHelper.ExecuteReaderAsync(connection,
+                MxStateDaoResources.GetSimplifiedStates, new MySqlParameter("hostName", ReverseUrl(hostName))))
+            {
+                while (await reader.ReadAsync())
+                {
+                    string hostEntityJson = CommonDataUtil.GetString(reader, "hostJson"); 
+                    string ipAddressEntityJson = CommonDataUtil.GetString(reader, "ipAddressJson");
+
+                    if (!string.IsNullOrEmpty(hostEntityJson))
+                    {
+                        results.Add(JsonConvert.DeserializeObject<SimplifiedTlsEntityState>(hostEntityJson));
+                    }
+
+                    if (!string.IsNullOrEmpty(ipAddressEntityJson))
+                    {
+                        results.Add(JsonConvert.DeserializeObject<SimplifiedTlsEntityState>(ipAddressEntityJson));
+                    }
+                }
+            }
+
+            return results;
         }
 
         private string ReverseUrl(string url)

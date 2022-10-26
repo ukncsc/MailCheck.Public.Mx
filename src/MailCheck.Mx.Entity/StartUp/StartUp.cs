@@ -34,6 +34,7 @@ namespace MailCheck.Mx.Entity.StartUp
                 .AddTransient<IChangeNotifiersComposite, ChangeNotifiersComposite>()
                 .AddTransient<IChangeNotifier, RecordChangedNotifier>()
                 .AddTransient<IEqualityComparer<HostMxRecord>, RecordEqualityComparer>()
+                .AddSingleton<IFindingFactory, FindingFactory>()
                 .AddTransient<MxEntity>();
         }
     }

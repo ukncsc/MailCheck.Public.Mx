@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using MailCheck.Mx.Contracts.Entity;
+using MailCheck.Mx.Contracts.Simplified;
 
 namespace MailCheck.Mx.Entity.Dao
 {
@@ -12,5 +13,6 @@ namespace MailCheck.Mx.Entity.Dao
         Task Delete(string domainId);
         Task<List<string>> GetHostsUniqueToDomain(string domainName);
         Task DeleteHosts(List<string> hosts);
+        Task<List<SimplifiedTlsEntityState>> GetSimplifiedStates(string hostName);
     }
 }

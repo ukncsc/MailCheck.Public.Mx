@@ -1,6 +1,7 @@
 GRANT SELECT, INSERT, UPDATE, DELETE ON `Domain` TO '{env}-mx-entity' IDENTIFIED BY '{password}';
 GRANT SELECT, INSERT, UPDATE, DELETE ON `MxHost` TO '{env}-mx-entity' IDENTIFIED BY '{password}';
 GRANT SELECT, INSERT, UPDATE, DELETE ON `MxRecord` TO '{env}-mx-entity' IDENTIFIED BY '{password}';
+GRANT SELECT ON `SimplifiedTlsEntity` TO '{env}-mx-entity' IDENTIFIED BY '{password}';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON `TlsEntity` TO '{env}-tls-entity' IDENTIFIED BY '{password}';
 GRANT SELECT, INSERT, UPDATE, DELETE ON `SimplifiedTlsEntity` TO '{env}-tls-entity' IDENTIFIED BY '{password}';
